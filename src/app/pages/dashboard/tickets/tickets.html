@@ -41,17 +41,27 @@
       </tr>
     </thead>
     <tbody>
-      @for (ticket of tickets; track ticket.id) {
+      @if (tickets.isLoading()) {
         <tr>
-          <td class="table__id">{{ ticket.id }}</td>
-          <td class="table__subject">{{ ticket.subject }}</td>
-          <td>{{ ticket.topic }}</td>
-          <td>
-            <span class="badge" [class]="statusClasses[ticket.status]">{{ ticket.status }}</span>
-          </td>
-          <td>{{ ticket.priority }}</td>
-          <td>{{ ticket.assignee }}</td>
-          <td>{{ ticket.updated }}</td>
+          <td class="table__message" colspan="7">Loading tickets...</td>
+        </tr>
+      } @else if (tickets.hasValue()) {
+        @for (ticket of tickets.value(); track ticket.id) {
+          <tr>
+            <td class="table__id">{{ ticket.id }}</td>
+            <td class="table__subject">{{ ticket.subject }}</td>
+            <td>{{ ticket.topic }}</td>
+            <td>
+              <span class="badge" [class]="statusClasses[ticket.status]">{{ ticket.status }}</span>
+            </td>
+            <td>{{ ticket.priority }}</td>
+            <td>{{ ticket.assignee }}</td>
+            <td>{{ ticket.updated }}</td>
+          </tr>
+        }
+      } @else {
+        <tr>
+          <td class="table__message" colspan="7">Could not load tickets.</td>
         </tr>
       }
     </tbody>

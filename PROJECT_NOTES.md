@@ -97,6 +97,8 @@ All six routes in `src/app/app.routes.ts` now use `loadComponent`, so each page'
 
 If they match, the user goes to `/dashboard`. If not, the page shows "Invalid username or password." and the user stays on it.
 
+This is for development only: it is not real authentication, and `/dashboard` can still be opened directly without logging in.
+
 The login form's Email field was later replaced with Username.
 
 ## 10. Dashboard layout and Tickets page UI created
@@ -110,4 +112,32 @@ Built from the supplied design:
 
 This is UI only. The tickets are 8 hardcoded rows in `tickets.ts`, and the user (Alex Morgan) is hardcoded in `dashboard.html`. Search, filters and buttons do nothing. "10,000 tickets" and the footer text about virtual scroll and server search are design text only: none of that is built yet.
 
-This is for development only: it is not real authentication, and `/dashboard` can still be opened directly without logging in.
+## 11. MSW mock API set up for tickets
+
+Command used:
+
+```bash
+npx msw init public --save
+```
+
+- `public/mockServiceWorker.js`: the worker file MSW generates. Do not edit it by hand.
+- `package.json`: `msw.workerDirectory` records where the worker file lives.
+- `src/mocks/handlers.ts`: the mock data and the `GET /api/tickets` endpoint. It returns the same 8 tickets as the page.
+- `src/mocks/browser.ts`: creates the worker from the handlers.
+- `src/main.ts`: starts the worker before the app loads, in development mode only. Requests with no mock handler pass through as normal.
+
+## 12. Tickets page gets its data from the mock API
+
+- `tickets.ts` loads the tickets from `GET /api/tickets` using `httpResource`. The hardcoded rows were removed, so the data now lives only in `src/mocks/handlers.ts`.
+- `tickets.html` shows "Loading tickets..." while waiting and "Could not load tickets." if the request fails.
+
+## 13. MSW removed, mock data moved to a JSON file
+
+MSW was removed to reduce complexity. Sections 2, 11 and 12 describe the earlier setup.
+
+- Removed: the `msw` package, the `msw` entry in `package.json`, `public/mockServiceWorker.js` and `src/mocks/`.
+- `src/main.ts` is back to starting the app directly.
+- `public/mock-data/tickets.json` now holds the 8 tickets. To change the mock data, edit this file.
+- `tickets.ts` still uses `httpResource`, now loading `/mock-data/tickets.json`.
+
+Files in `public/` are included in production builds, so this JSON file ships with the app until it is replaced by a real API.
