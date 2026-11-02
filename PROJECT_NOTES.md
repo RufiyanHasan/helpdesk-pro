@@ -172,3 +172,16 @@ All seven columns can be sorted by clicking their header, using Material's `MatS
 The search box filters the table as the user types, matching text anywhere in the subject or ID, ignoring upper and lower case. It uses the `filter` on `MatTableDataSource`, so it runs in the browser on the tickets already loaded, and it works together with sorting. No matches shows "No tickets found."
 
 The placeholder reads "Search by subject or ID". The design also mentioned requester, but the mock data has no requester field, so that was left out.
+
+## 17. Microfrontend architecture started
+
+The project is moving to microfrontends using Native Federation (`@angular-architects/native-federation`), with Rufiyan doing the setup.
+
+- Shell: the root `helpdesk-pro` app, port 4200.
+- Tickets: Angular remote in `projects/tickets`, port 4201, now loaded by the shell. It also works on its own: its `angular.json` assets include the shell's `public/mock-data`, and its `styles.scss` loads the shell's `src/styles.scss`.
+- Planned: Topics and Landing page as Angular remotes, and Settings as a React remote. The React work comes later, after the Tickets functionality is finished.
+
+Problems met so far:
+
+- `Could not resolve "node:path/posix"`: fixed by adding `'@angular/cdk/schematics'` to `skip` in the remote's `federation.config.mjs`. Any remote using Material or CDK needs this.
+- `ngDevMode is not defined`: caused by running `ng build` while `ng serve` was running. Both use `dist/<app>/browser`, so production files replaced the development ones. Do not run a production build during `ng serve`. If it happens, restart `ng serve`.
