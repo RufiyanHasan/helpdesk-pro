@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { loadRemoteModule } from '@angular-architects/native-federation';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full'},
@@ -10,10 +11,10 @@ export const routes: Routes = [
     path: 'dashboard',
     loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.Dashboard),
     children: [
-      { path: '', redirectTo: 'tickets', pathMatch: 'full' },
+      {path: '', redirectTo: 'tickets', pathMatch: 'full'},
       {
         path: 'tickets',
-        loadComponent: () => import('./pages/dashboard/tickets/tickets').then((m) => m.Tickets),
+        loadComponent: () => loadRemoteModule('tickets', './Component').then((m) => m.Tickets),
       },
       {
         path: 'topics',
