@@ -141,3 +141,34 @@ MSW was removed to reduce complexity. Sections 2, 11 and 12 describe the earlier
 - `tickets.ts` still uses `httpResource`, now loading `/mock-data/tickets.json`.
 
 Files in `public/` are included in production builds, so this JSON file ships with the app until it is replaced by a real API.
+
+## 14. Tickets table uses Angular Material
+
+Angular Material was chosen for the table because it is free (MIT licence).
+
+Command used:
+
+```bash
+npm install @angular/material @angular/cdk
+```
+
+- `tickets.html` now uses `mat-table`, with its columns listed in `columns` in `tickets.ts`.
+- `tickets.scss` styles the table through Material's `--mat-table-*` CSS variables, so it keeps the look of the design. No Material theme was added.
+- `styles.scss` has a new global `--font-family` variable, because Material's table needs the font set explicitly.
+- The loading and error messages now sit in the table's no-data row, along with a new "No tickets found." message for an empty list.
+
+`mat-table` has no built-in virtual scrolling, so all rows are rendered. Pagination is not added.
+
+## 15. Tickets table sorting added
+
+All seven columns can be sorted by clicking their header, using Material's `MatSort` and `MatTableDataSource`. Sorting happens in the browser, on the tickets already loaded.
+
+- Most columns sort alphabetically.
+- Priority sorts by importance: Low, Medium, High, Urgent.
+- Updated sorts by time: most recent first when ascending. This reads the display text in the mock data, such as "4 min ago", so it needs changing when real dates arrive.
+
+## 16. Tickets search added
+
+The search box filters the table as the user types, matching text anywhere in the subject or ID, ignoring upper and lower case. It uses the `filter` on `MatTableDataSource`, so it runs in the browser on the tickets already loaded, and it works together with sorting. No matches shows "No tickets found."
+
+The placeholder reads "Search by subject or ID". The design also mentioned requester, but the mock data has no requester field, so that was left out.
