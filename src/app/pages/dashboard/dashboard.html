@@ -1,0 +1,50 @@
+<div class="dashboard">
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__mark">A</span>
+      <div>
+        <div class="sidebar__name">Acme Corp</div>
+        <div class="sidebar__product">HelpDesk Pro</div>
+      </div>
+    </div>
+
+    <nav class="sidebar__nav">
+      <a
+        class="sidebar__link"
+        routerLink="/dashboard/tickets"
+        routerLinkActive="sidebar__link--active"
+        >Tickets</a
+      >
+      <a
+        class="sidebar__link"
+        routerLink="/dashboard/topics"
+        routerLinkActive="sidebar__link--active"
+        >Topics</a
+      >
+      <a
+        class="sidebar__link"
+        routerLink="/dashboard/landing-page"
+        routerLinkActive="sidebar__link--active"
+        >Landing page</a
+      >
+      <a
+        class="sidebar__link"
+        routerLink="/dashboard/settings"
+        routerLinkActive="sidebar__link--active"
+        >Settings</a
+      >
+    </nav>
+
+    <div class="sidebar__user">
+      <span class="sidebar__avatar">AM</span>
+      <div>
+        <div class="sidebar__user-name">Alex Morgan</div>
+        <div class="sidebar__user-role">Admin</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

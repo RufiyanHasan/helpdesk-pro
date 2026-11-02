@@ -1,1 +1,26 @@
 /* You can add global styles to this file, and also import other style files */
+:root {
+  --primary: #3763e5;
+  --link: #1d4ed8;
+  --text: #111827;
+  --text-muted: #4b5563;
+  --border: #d1d5db;
+  --border-light: #e5e7eb;
+  --background: #f9fafb;
+  --white: #ffffff;
+  --error: #dc2626;
+  --primary-light: #eff4ff;
+  --status-open-bg: #dbeafe;
+  --status-open-text: #1d4ed8;
+  --status-in-progress-bg: #fef3c7;
+  --status-in-progress-text: #92400e;
+  --status-overdue-bg: #fee2e2;
+  --status-overdue-text: #991b1b;
+  --status-resolved-bg: #dcfce7;
+  --status-resolved-text: #166534;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}

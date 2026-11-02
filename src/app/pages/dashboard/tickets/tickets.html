@@ -1,0 +1,64 @@
+<header class="header">
+  <div>
+    <h1 class="header__title">Tickets</h1>
+    <p class="header__subtitle">10,000 tickets · showing open and in progress</p>
+  </div>
+  <button class="new-ticket" type="button">+ New ticket</button>
+</header>
+
+<div class="toolbar">
+  <div class="search">
+    <svg class="search__icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <line x1="16.5" y1="16.5" x2="21" y2="21" />
+    </svg>
+    <input
+      class="search__input"
+      type="search"
+      placeholder="Search by subject, ID or requester"
+      aria-label="Search tickets"
+    />
+  </div>
+
+  @for (filter of filters; track filter) {
+    <button class="filter" type="button">{{ filter }} <span class="filter__caret">▾</span></button>
+  }
+
+  <button class="advanced-search" type="button">Advanced search</button>
+</div>
+
+<div class="table-card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Subject</th>
+        <th>Topic</th>
+        <th>Status</th>
+        <th>Priority</th>
+        <th>Assignee</th>
+        <th>Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (ticket of tickets; track ticket.id) {
+        <tr>
+          <td class="table__id">{{ ticket.id }}</td>
+          <td class="table__subject">{{ ticket.subject }}</td>
+          <td>{{ ticket.topic }}</td>
+          <td>
+            <span class="badge" [class]="statusClasses[ticket.status]">{{ ticket.status }}</span>
+          </td>
+          <td>{{ ticket.priority }}</td>
+          <td>{{ ticket.assignee }}</td>
+          <td>{{ ticket.updated }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+<footer class="footer">
+  <span>Virtual scroll · only visible rows are rendered</span>
+  <span>Search runs on the server, 300 ms after typing stops</span>
+</footer>

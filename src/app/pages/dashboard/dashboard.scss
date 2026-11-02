@@ -1,0 +1,103 @@
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+  color: var(--text);
+}
+
+.sidebar {
+  display: flex;
+  flex: 0 0 238px;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 22px 15px;
+  border-right: 1px solid var(--border-light);
+  background: var(--white);
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 8px 24px;
+  }
+
+  &__mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--primary);
+    color: var(--white);
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  &__name {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  &__product {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  &__nav {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__link {
+    padding: 9px 12px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 15px;
+    text-decoration: none;
+
+    &--active {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+    }
+  }
+
+  &__user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 8px;
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--border-light);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  &__user-name {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  &__user-role {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 30px 36px 30px 32px;
+  background: var(--background);
+}
