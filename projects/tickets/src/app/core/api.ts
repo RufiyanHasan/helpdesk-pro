@@ -24,7 +24,7 @@ export class Api {
     return this.http.patch<T>(url, body);
   }
 
-  delete<T>(url: string): Observable<T> {
-    return this.http.delete<T>(url);
+  delete<T>(url: string, body?: unknown): Observable<T> {
+    return this.http.delete<T>(url, { body });
   }
 }

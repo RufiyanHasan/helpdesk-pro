@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, effect, ElementRef, inject, linkedSignal, signal, viewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, linkedSignal, signal, viewChild } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
@@ -45,7 +45,7 @@ export class Tickets {
     { key: 'topic', label: 'Topic', options: TOPICS },
   ];
 
-  protected readonly columns = ['id', 'subject', 'topic', 'status', 'priority', 'assignee', 'updated'];
+  protected readonly columns = ['select', 'id', 'subject', 'topic', 'status', 'priority', 'assignee', 'updated'];
 
   protected readonly statusClasses: Record<string, string> = {
     Open: 'badge--open',
@@ -90,13 +90,69 @@ export class Tickets {
       this.tickets.error() ? NO_RESULTS : (current ?? previous?.value ?? NO_RESULTS),
   });
 
+  protected readonly selectedIds = signal<ReadonlySet<string>>(new Set());
+
+  protected readonly allSelected = computed(() => {
+    const { tickets } = this.results();
+    return tickets.length > 0 && tickets.every((ticket) => this.selectedIds().has(ticket.id));
+  });
+
+  protected readonly someSelected = computed(() => this.selectedIds().size > 0 && !this.allSelected());
+
+  protected readonly isDeleting = signal(false);
+
+  protected readonly deleteFailed = signal(false);
+
   private readonly tableScroll = viewChild.required<ElementRef<HTMLElement>>('tableScroll');
 
   constructor() {
-    // Each new set of rows starts at the top of the scrollable table.
+    // Each new set of rows starts at the top of the scrollable table, with nothing selected.
     effect(() => {
       this.results();
       this.tableScroll().nativeElement.scrollTop = 0;
+      this.selectedIds.set(new Set());
+    });
+  }
+
+  protected toggleTicket(id: string, checked: boolean): void {
+    const selected = new Set(this.selectedIds());
+    if (checked) {
+      selected.add(id);
+    } else {
+      selected.delete(id);
+    }
+    this.selectedIds.set(selected);
+  }
+
+  protected toggleAll(checked: boolean): void {
+    this.selectedIds.set(new Set(checked ? this.results().tickets.map((ticket) => ticket.id) : []));
+  }
+
+  protected deleteSelected(): void {
+    const ids = [...this.selectedIds()];
+    const label = ids.length === 1 ? '1 ticket' : `${ids.length} tickets`;
+
+    if (!confirm(`Delete ${label}? This cannot be undone.`)) {
+      return;
+    }
+
+    this.isDeleting.set(true);
+    this.deleteFailed.set(false);
+
+    this.api.delete<unknown>(API_URLS.tickets, { ids }).subscribe({
+      next: () => {
+        this.isDeleting.set(false);
+        const pageIsNowEmpty = ids.length === this.results().tickets.length;
+        if (pageIsNowEmpty && this.pageIndex() > 0) {
+          this.pageIndex.update((index) => index - 1);
+        } else {
+          this.tickets.reload();
+        }
+      },
+      error: () => {
+        this.isDeleting.set(false);
+        this.deleteFailed.set(true);
+      },
     });
   }
 

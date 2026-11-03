@@ -33,9 +33,10 @@ function text(value: unknown): string {
 }
 
 function nextTicketId(): string {
-    const { lastId } = db.prepare('SELECT MAX(id) AS lastId FROM tickets').get() as { lastId: string | null };
-    const nextNumber = lastId ? Number(lastId.replace('HD-', '')) + 1 : 1;
-    return `HD-${String(nextNumber).padStart(5, '0')}`;
+    const { last_number } = db.prepare(
+        'UPDATE ticket_counter SET last_number = last_number + 1 RETURNING last_number'
+    ).get() as { last_number: number };
+    return `HD-${String(last_number).padStart(5, '0')}`;
 }
 
 function positiveNumber(value: unknown, fallback: number): number {
@@ -74,6 +75,25 @@ app.post('/api/tickets', (req,res)=>{
     `).run({ id, subject, topic, priority, requesterEmail, description });
 
     res.status(201).json(db.prepare('SELECT * FROM tickets WHERE id = :id').get({ id }));
+})
+
+app.delete('/api/tickets', (req,res)=>{
+    const ids: unknown = req.body?.ids;
+
+    if (
+        !Array.isArray(ids) ||
+        ids.length === 0 ||
+        ids.length > MAX_PAGE_SIZE ||
+        !ids.every((id) => typeof id === 'string')
+    ) {
+        res.status(400).json({ error: 'Invalid ticket ids' });
+        return;
+    }
+
+    const placeholders = ids.map(() => '?').join(', ');
+    const { changes } = db.prepare(`DELETE FROM tickets WHERE id IN (${placeholders})`).run(...ids);
+
+    res.json({ deleted: Number(changes) });
 })
 
 app.get('/api/tickets', (req,res)=>{

@@ -256,6 +256,18 @@ npm install ckeditor5 @ckeditor/ckeditor5-angular
 - `licenseKey: 'GPL'` uses CKEditor's free GPL licence. A closed-source product would need a commercial licence from CKSource instead.
 - CKEditor only downloads when the New ticket page opens, not on the list page. Adding it to the shared packages needs `ng serve tickets` to be restarted.
 
+## 23. Selecting and deleting tickets
+
+- The Tickets table has a checkbox on each row, and one in the header to select the whole page.
+- "Delete selected (N)" appears when something is selected. It asks for confirmation, then calls `DELETE /api/tickets` with `{ "ids": [...] }`, up to 100 at a time.
+- Deleting is permanent, as there is no undo or trash.
+- Selection only covers the current page, and clears when the rows change, such as on a new page, search, filter or sort. This stops tickets you can't see from being deleted.
+- `npm run seed` restores the seeded tickets, but not ones created through the form.
+
+## 24. Ticket IDs are never reused
+
+New ticket IDs now come from a `ticket_counter` table in SQLite instead of the highest existing ID, so deleting a ticket never frees up its ID. `db.ts` creates the counter from the highest existing ID, and `seed.ts` makes sure it stays above the seeded tickets. Gaps in the numbering are normal.
+
 Problems met so far:
 
 - `Could not resolve "node:path/posix"`: fixed by adding `'@angular/cdk/schematics'` to `skip` in the remote's `federation.config.mjs`. Any remote using Material or CDK needs this.

@@ -3,7 +3,17 @@
     <h1 class="header__title">Tickets</h1>
     <p class="header__subtitle">Total tickets: {{ results().total | number }}</p>
   </div>
-  <a class="new-ticket" routerLink="new">+ New ticket</a>
+  <div class="header__actions">
+    @if (deleteFailed()) {
+      <p class="header__error">Could not delete the tickets. Please try again.</p>
+    }
+    @if (selectedIds().size > 0) {
+      <button class="delete-tickets" type="button" [disabled]="isDeleting()" (click)="deleteSelected()">
+        Delete selected ({{ selectedIds().size }})
+      </button>
+    }
+    <a class="new-ticket" routerLink="new">+ New ticket</a>
+  </div>
 </header>
 
 <div class="toolbar">
@@ -42,6 +52,29 @@
 <div class="table-card">
   <div #tableScroll class="table-scroll">
     <table mat-table matSort class="table" [dataSource]="results().tickets" (matSortChange)="sort($event)">
+      <ng-container matColumnDef="select">
+        <th mat-header-cell class="table__select" *matHeaderCellDef>
+          <input
+            #allBox
+            type="checkbox"
+            aria-label="Select all tickets on this page"
+            [checked]="allSelected()"
+            [indeterminate]="someSelected()"
+            [disabled]="results().tickets.length === 0"
+            (change)="toggleAll(allBox.checked)"
+          />
+        </th>
+        <td mat-cell class="table__select" *matCellDef="let ticket">
+          <input
+            #ticketBox
+            type="checkbox"
+            [attr.aria-label]="'Select ticket ' + ticket.id"
+            [checked]="selectedIds().has(ticket.id)"
+            (change)="toggleTicket(ticket.id, ticketBox.checked)"
+          />
+        </td>
+      </ng-container>
+
       <ng-container matColumnDef="id">
         <th mat-header-cell mat-sort-header *matHeaderCellDef>ID</th>
         <td mat-cell class="table__id" *matCellDef="let ticket">{{ ticket.id }}</td>

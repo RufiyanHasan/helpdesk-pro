@@ -15,6 +15,17 @@ db.exec(`
   )
 `);
 
+// Stores the last ticket number used, so a deleted ticket's ID is never given out again.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS ticket_counter (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    last_number INTEGER NOT NULL
+  );
+
+  INSERT OR IGNORE INTO ticket_counter (id, last_number)
+  SELECT 1, COALESCE(MAX(CAST(SUBSTR(id, 4) AS INTEGER)), 0) FROM tickets;
+`);
+
 // Adds the newer columns to a database created before they existed.
 const existingColumns = db.prepare('PRAGMA table_info(tickets)').all().map((column) => column.name);
 
