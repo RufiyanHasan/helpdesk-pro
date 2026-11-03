@@ -14,7 +14,7 @@ export const routes: Routes = [
       {path: '', redirectTo: 'tickets', pathMatch: 'full'},
       {
         path: 'tickets',
-        loadComponent: () => loadRemoteModule('tickets', './Component').then((m) => m.Tickets),
+        loadChildren: () => loadRemoteModule('tickets', './Routes').then((m) => m.routes),
       },
       {
         path: 'topics',

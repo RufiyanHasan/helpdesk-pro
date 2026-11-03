@@ -1,6 +1,6 @@
 .dashboard {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
   color: var(--text);
 }
 
@@ -95,8 +95,11 @@
 }
 
 .content {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-width: 0;
+  overflow-y: auto;
   box-sizing: border-box;
   padding: 30px 36px 30px 32px;
   background: var(--background);

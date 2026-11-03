@@ -1,0 +1,109 @@
+import cors from 'cors';
+import express from 'express';
+import { db } from './db.ts';
+
+
+const app = express();
+const PORT = 3000;
+const DEFAULT_PAGE_SIZE = 25;
+const MAX_PAGE_SIZE = 100;
+
+// Only these columns can be sorted on. The client never sends SQL directly.
+const SORT_COLUMNS: Record<string, string> = {
+    id: 'id',
+    subject: 'subject',
+    topic: 'topic',
+    status: 'status',
+    assignee: 'assignee',
+    priority: `CASE priority WHEN 'Low' THEN 1 WHEN 'Medium' THEN 2 WHEN 'High' THEN 3 ELSE 4 END`,
+    updated: `CASE
+        WHEN updated = 'Yesterday' THEN 1440
+        WHEN updated LIKE '% h ago' THEN CAST(updated AS INTEGER) * 60
+        ELSE CAST(updated AS INTEGER)
+    END`,
+};
+
+const FILTER_COLUMNS = ['status', 'priority', 'assignee', 'topic'];
+const TOPICS = ['Account access', 'Billing', 'Branding', 'Content', 'Integrations', 'Performance', 'Reports'];
+const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function text(value: unknown): string {
+    return typeof value === 'string' ? value.trim() : '';
+}
+
+function nextTicketId(): string {
+    const { lastId } = db.prepare('SELECT MAX(id) AS lastId FROM tickets').get() as { lastId: string | null };
+    const nextNumber = lastId ? Number(lastId.replace('HD-', '')) + 1 : 1;
+    return `HD-${String(nextNumber).padStart(5, '0')}`;
+}
+
+function positiveNumber(value: unknown, fallback: number): number {
+    const number = Number(value);
+    return Number.isInteger(number) && number > 0 ? number : fallback;
+}
+
+function orderBy(sortBy: unknown, sortDir: unknown): string {
+    const hasColumn = typeof sortBy === 'string' && Object.hasOwn(SORT_COLUMNS, sortBy);
+    if (!hasColumn || (sortDir !== 'asc' && sortDir !== 'desc')) {
+        return 'id DESC';
+    }
+    return `${SORT_COLUMNS[sortBy]} ${sortDir.toUpperCase()}, id DESC`;
+}
+
+app.use(cors({ origin: ['http://localhost:4200', 'http://localhost:4201'] }));
+app.use(express.json());
+
+app.post('/api/tickets', (req,res)=>{
+    const requesterEmail = text(req.body?.requesterEmail);
+    const topic = text(req.body?.topic);
+    const subject = text(req.body?.subject);
+    const description = text(req.body?.description);
+    const priority = text(req.body?.priority);
+
+    if (!EMAIL_PATTERN.test(requesterEmail) || !subject || !TOPICS.includes(topic) || !PRIORITIES.includes(priority)) {
+        res.status(400).json({ error: 'Invalid ticket' });
+        return;
+    }
+
+    const id = nextTicketId();
+
+    db.prepare(`
+        INSERT INTO tickets (id, subject, topic, status, priority, assignee, updated, requester_email, description)
+        VALUES (:id, :subject, :topic, 'Open', :priority, 'Unassigned', 'Just now', :requesterEmail, :description)
+    `).run({ id, subject, topic, priority, requesterEmail, description });
+
+    res.status(201).json(db.prepare('SELECT * FROM tickets WHERE id = :id').get({ id }));
+})
+
+app.get('/api/tickets', (req,res)=>{
+    const page = positiveNumber(req.query.page, 1);
+    const pageSize = Math.min(positiveNumber(req.query.pageSize, DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
+    const term = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const search = `%${term.replace(/[\\%_]/g, '\\$&')}%`;
+    const conditions = [`(subject LIKE :search ESCAPE '\\' OR id LIKE :search ESCAPE '\\')`];
+    const params: Record<string, string> = { search };
+
+    for (const column of FILTER_COLUMNS) {
+        const value = req.query[column];
+        if (typeof value === 'string' && value) {
+            conditions.push(`${column} = :${column}`);
+            params[column] = value;
+        }
+    }
+
+    const where = `WHERE ${conditions.join(' AND ')}`;
+
+    const { total } = db.prepare(`SELECT COUNT(*) AS total FROM tickets ${where}`).get(params) as { total: number };
+    const tickets = db.prepare(`
+        SELECT * FROM tickets ${where}
+        ORDER BY ${orderBy(req.query.sortBy, req.query.sortDir)}
+        LIMIT :limit OFFSET :offset
+    `).all({ ...params, limit: pageSize, offset: (page - 1) * pageSize });
+
+    res.json({ tickets, total });
+})
+
+app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+})
