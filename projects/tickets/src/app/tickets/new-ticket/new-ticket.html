@@ -1,0 +1,81 @@
+<a class="back-link" routerLink="..">← Back to tickets</a>
+<h1 class="title">New ticket</h1>
+
+<div class="layout">
+  <form class="card form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__row">
+      <div class="field">
+        <label class="field__label" for="requester-email">Requester email</label>
+        <input
+          class="field__input"
+          id="requester-email"
+          type="email"
+          placeholder="name@company.com"
+          formControlName="requesterEmail"
+        />
+        @if (form.controls.requesterEmail.touched && form.controls.requesterEmail.hasError('required')) {
+          <p class="field__error">Requester email is required.</p>
+        } @else if (form.controls.requesterEmail.touched && form.controls.requesterEmail.hasError('email')) {
+          <p class="field__error">Enter a valid email address.</p>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="topic">Topic</label>
+        <select class="field__input" id="topic" formControlName="topic">
+          @for (topic of topics; track topic) {
+            <option [value]="topic">{{ topic }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="subject">Subject</label>
+      <input
+        class="field__input"
+        id="subject"
+        type="text"
+        placeholder="Short summary of the issue"
+        formControlName="subject"
+      />
+      @if (form.controls.subject.touched && form.controls.subject.hasError('required')) {
+        <p class="field__error">Subject is required.</p>
+      }
+    </div>
+
+    <div class="field">
+      <span class="field__label">Description</span>
+      <app-rich-text-editor
+        label="Description"
+        placeholder="What happened, and what did you expect?"
+        [control]="form.controls.description"
+      />
+    </div>
+
+    <fieldset class="priority">
+      <legend class="field__label">Priority</legend>
+      @for (priority of priorities; track priority) {
+        <label class="priority__option">
+          <input type="radio" formControlName="priority" [value]="priority" />
+          {{ priority }}
+        </label>
+      }
+    </fieldset>
+
+    <div class="form__actions">
+      @if (submitFailed()) {
+        <p class="field__error form__error">Could not create the ticket. Please try again.</p>
+      }
+      <a class="button button--secondary" routerLink="..">Cancel</a>
+      <button class="button button--primary" type="submit" [disabled]="isSubmitting()">Create ticket</button>
+    </div>
+  </form>
+
+  <aside class="card articles">
+    <h2 class="articles__title">Similar articles</h2>
+    @for (article of articles; track article) {
+      <button class="articles__link" type="button">{{ article }}</button>
+    }
+  </aside>
+</div>

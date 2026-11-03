@@ -1,0 +1,23 @@
+@import 'ckeditor5/ckeditor5.css';
+
+.rich-text-editor {
+  --ck-font-face: var(--font-family);
+  --ck-font-size-base: 15px;
+  --ck-content-font-family: var(--font-family);
+  --ck-content-font-size: 15px;
+  --ck-color-toolbar-background: var(--background);
+  --ck-color-toolbar-border: var(--border);
+  --ck-color-base-border: var(--border);
+  --ck-focus-ring: 1px solid var(--primary);
+  --ck-color-focus-border: var(--primary);
+  --ck-color-button-on-color: var(--primary);
+
+  .ck.ck-editor__top .ck-sticky-panel .ck-toolbar {
+    border-radius: 10px 10px 0 0;
+  }
+
+  .ck.ck-editor__main > .ck-editor__editable {
+    min-height: 140px;
+    border-radius: 0 0 10px 10px;
+  }
+}

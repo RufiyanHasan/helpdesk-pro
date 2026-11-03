@@ -4,6 +4,6 @@ export const routes: Routes = [
     {path: '', redirectTo: 'tickets', pathMatch: 'full'},
     {
         path: 'tickets',
-        loadComponent: () => import('./tickets/tickets').then((m) => m.Tickets),
+        loadChildren: () => import('./tickets/tickets.routes').then((m) => m.routes),
     },
 ];

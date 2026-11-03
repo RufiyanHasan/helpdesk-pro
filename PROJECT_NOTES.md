@@ -181,6 +181,81 @@ The project is moving to microfrontends using Native Federation (`@angular-archi
 - Tickets: Angular remote in `projects/tickets`, port 4201, now loaded by the shell. It also works on its own: its `angular.json` assets include the shell's `public/mock-data`, and its `styles.scss` loads the shell's `src/styles.scss`.
 - Planned: Topics and Landing page as Angular remotes, and Settings as a React remote. The React work comes later, after the Tickets functionality is finished.
 
+Backend: started in `server/` at the repo root, using Express and Node's built-in `node:sqlite`, with Rufiyan doing the setup. Its own `.gitignore` keeps `node_modules` and the database file out of Git. `server/db.ts` creates the tickets table, and `npm run seed` copies the tickets from `public/mock-data/tickets.json` into `server/helpdesk.db`. `server/tsconfig.json` sets up the editor and type checks for Node.
+
+The Tickets page now loads from `GET http://localhost:3000/api/tickets` instead of the mock JSON file, so the backend must be running (`npm run dev` in `server/`). `server/server.ts` uses `cors` to allow requests from `localhost:4200` and `localhost:4201`. The API URL is hardcoded for local development. `public/mock-data/tickets.json` stays because `seed.ts` reads it.
+
+API calls in the tickets remote now go through a service instead of `httpResource`:
+
+- `projects/tickets/src/app/core/api-urls.ts`: stores the API URLs in `API_URLS`.
+- `projects/tickets/src/app/core/api.ts`: the `Api` service, with `get`, `post`, `put`, `patch` and `delete` methods that take any URL.
+- `tickets.ts` calls `api.get` through `rxResource`, which keeps the loading and error states.
+
+Only `GET /api/tickets` exists on the backend so far.
+
+`npm run seed` now fills the database with 10,000 tickets, `HD-00483` to `HD-10482`. The 8 tickets from the mock JSON file are kept and the rest are randomly generated, so re-running it changes the generated tickets. 
+
+## 18. Server-side paging with mat-paginator
+
+`GET /api/tickets` now returns one page at a time as `{ tickets, total }`, and paging, search and sorting all run in SQLite.
+
+| Query parameter | Meaning | Default |
+| --- | --- | --- |
+| `page` | Page number, starting at 1 | `1` |
+| `pageSize` | Tickets per page, up to 100 | `25` |
+| `search` | Text to find in the subject or ID | None |
+| `sortBy` | `id`, `subject`, `topic`, `status`, `priority`, `assignee` or `updated` | None |
+| `sortDir` | `asc` or `desc` | Newest ID first |
+
+- `tickets.ts` no longer uses `MatTableDataSource`. It keeps the page, search and sort in signals, and `rxResource` reloads when any of them change.
+- The table has a `mat-paginator` showing 25 tickets per page. Changing the search or sort returns to the first page.
+- Search waits 300 ms after typing stops.
+- Priority and Updated keep their sort order through SQL `CASE` expressions in `server.ts`. Updated still reads display text such as "4 min ago", so it needs changing when real dates arrive.
+
+## 19. Tickets filters added
+
+The Status, Priority, Assignee and Topic filters now work, and run on the server.
+
+- `GET /api/tickets` accepts `status`, `priority`, `assignee` and `topic` as exact matches. They combine with each other, and with search and sorting.
+- `tickets.html` uses a native `<select>` for each filter, styled to look like the design's buttons. Each filter shows all tickets until an option is chosen.
+- Choosing a filter returns to the first page.
+- The filter options are listed in `tickets.ts`, so they must be kept in step with the data.
+- The header shows "Total tickets: N" using the API's `total`, so it follows search and filters.
+- The footer's virtual scroll line was removed, because the table uses paging.
+
+## 20. Tickets page fits the screen
+
+- `dashboard.scss` now makes the layout exactly the height of the screen, and `.content` scrolls if a page is taller than that.
+- In `tickets.scss`, the header, toolbar, paginator and footer stay in place, and only the table rows scroll inside `.table-scroll`.
+- The table's column headings stay visible while scrolling, and each new set of rows starts at the top.
+- The table card has a minimum height of 240px, so on very short windows `.content` scrolls instead.
+
+## 21. New ticket page added
+
+"+ New ticket" opens `/dashboard/tickets/new`, built from the supplied design in `projects/tickets/src/app/tickets/new-ticket/`.
+
+- Creating a ticket calls `POST /api/tickets`, saves it to SQLite and returns to the list, where it appears first. New tickets get the next ID, status Open, assignee Unassigned and updated "Just now".
+- Requester email must be valid and Subject is required, in both the form and the server. Description is optional.
+- `db.ts` adds `requester_email` and `description` columns, including to an existing database.
+- The tickets remote now exposes `./Routes` (`tickets.routes.ts`) instead of `./Component`, and the shell loads it with `loadChildren`, so the remote owns its own pages. Changing `federation.config.mjs` needs `ng serve tickets` to be restarted.
+- `ticket-options.ts` holds the status, priority, assignee and topic lists.
+
+Not built yet: the Similar articles links are static and do nothing. The list page does not show requester email or description.
+
+## 22. CKEditor 5 added for the ticket description
+
+Command used:
+
+```bash
+npm install ckeditor5 @ckeditor/ckeditor5-angular
+```
+
+- `new-ticket/rich-text-editor/` is a small component wrapping CKEditor, with Bold, Italic, Underline, Bulleted List and Link. It works with any `FormControl<string>`.
+- Its encapsulation is off, because CKEditor adds its own elements at runtime and its styles must reach them.
+- The description is now saved as HTML. **Any page that displays it must sanitize it**, for example with Angular's `[innerHTML]`, and the server does not clean it yet.
+- `licenseKey: 'GPL'` uses CKEditor's free GPL licence. A closed-source product would need a commercial licence from CKSource instead.
+- CKEditor only downloads when the New ticket page opens, not on the list page. Adding it to the shared packages needs `ng serve tickets` to be restarted.
+
 Problems met so far:
 
 - `Could not resolve "node:path/posix"`: fixed by adding `'@angular/cdk/schematics'` to `skip` in the remote's `federation.config.mjs`. Any remote using Material or CDK needs this.

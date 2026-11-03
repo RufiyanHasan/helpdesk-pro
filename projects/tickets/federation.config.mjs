@@ -7,7 +7,7 @@ export default withNativeFederation({
   name: 'tickets',
 
   exposes: {
-    './Component': './projects/tickets/src/app/tickets/tickets.ts',
+    './Routes': './projects/tickets/src/app/tickets/tickets.routes.ts',
   },
 
   //shareScope: autoShareScope({level: 'minor'}),
