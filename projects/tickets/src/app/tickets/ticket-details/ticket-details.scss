@@ -1,0 +1,86 @@
+@use '../status-badge';
+
+.back-link {
+  color: var(--link);
+  font-size: 14px;
+}
+
+.message {
+  margin: 20px 0 0;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.title {
+  margin: 6px 0 4px;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.ticket-id {
+  margin: 0 0 20px;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.card {
+  box-sizing: border-box;
+  padding: 24px;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  background: var(--white);
+
+  &__title {
+    margin: 0 0 14px;
+    font-size: 17px;
+    font-weight: 600;
+  }
+}
+
+.description {
+  flex: 2;
+  min-width: 0;
+
+  &__body {
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  &__empty {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+
+  &__list {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px 16px;
+    margin: 0;
+    font-size: 14px;
+
+    dt {
+      color: var(--text-muted);
+    }
+
+    dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+  }
+}

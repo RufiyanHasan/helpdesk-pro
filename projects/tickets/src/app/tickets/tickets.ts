@@ -7,7 +7,7 @@ import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { API_URLS } from '../core/api-urls';
-import { ASSIGNEES, PRIORITIES, STATUSES, TOPICS } from './ticket-options';
+import { ASSIGNEES, PRIORITIES, STATUS_CLASSES, STATUSES, TOPICS } from './ticket-options';
 
 interface Ticket {
   id: string;
@@ -47,12 +47,7 @@ export class Tickets {
 
   protected readonly columns = ['select', 'id', 'subject', 'topic', 'status', 'priority', 'assignee', 'updated'];
 
-  protected readonly statusClasses: Record<string, string> = {
-    Open: 'badge--open',
-    'In progress': 'badge--in-progress',
-    Overdue: 'badge--overdue',
-    Resolved: 'badge--resolved',
-  };
+  protected readonly statusClasses = STATUS_CLASSES;
 
   protected readonly pageSize = 25;
 

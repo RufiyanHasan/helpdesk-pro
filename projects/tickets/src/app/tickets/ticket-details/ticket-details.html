@@ -1,0 +1,44 @@
+<a class="back-link" routerLink="..">← Back to tickets</a>
+
+@if (ticket.isLoading()) {
+  <p class="message">Loading ticket...</p>
+} @else if (ticket.error()) {
+  <p class="message">Could not load this ticket.</p>
+} @else if (ticket.value(); as details) {
+  <h1 class="title">{{ details.subject }}</h1>
+  <p class="ticket-id">{{ details.id }}</p>
+
+  <div class="layout">
+    <section class="card description">
+      <h2 class="card__title">Description</h2>
+      @if (details.description) {
+        <!-- Angular removes scripts and other unsafe HTML when binding to innerHTML. -->
+        <div class="description__body" [innerHTML]="details.description"></div>
+      } @else {
+        <p class="description__empty">No description provided.</p>
+      }
+    </section>
+
+    <aside class="card info">
+      <h2 class="card__title">Details</h2>
+      <dl class="info__list">
+        <dt>Status</dt>
+        <dd>
+          <span class="badge" [class]="statusClasses[details.status]">{{ details.status }}</span>
+        </dd>
+        <dt>Priority</dt>
+        <dd>{{ details.priority }}</dd>
+        <dt>Topic</dt>
+        <dd>{{ details.topic }}</dd>
+        <dt>Assignee</dt>
+        <dd>{{ details.assignee }}</dd>
+        <dt>Requester</dt>
+        <dd>{{ details.requester_email || 'Not provided' }}</dd>
+        <dt>Updated</dt>
+        <dd>{{ details.updated }}</dd>
+      </dl>
+    </aside>
+  </div>
+} @else {
+  <p class="message">Ticket not found.</p>
+}

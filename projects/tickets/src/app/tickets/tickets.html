@@ -82,7 +82,9 @@
 
       <ng-container matColumnDef="subject">
         <th mat-header-cell mat-sort-header *matHeaderCellDef>Subject</th>
-        <td mat-cell class="table__subject" *matCellDef="let ticket">{{ ticket.subject }}</td>
+        <td mat-cell class="table__subject" *matCellDef="let ticket">
+          <a [routerLink]="ticket.id">{{ ticket.subject }}</a>
+        </td>
       </ng-container>
 
       <ng-container matColumnDef="topic">

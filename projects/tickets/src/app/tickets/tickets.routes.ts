@@ -10,4 +10,8 @@ export const routes: Routes = [
     path: 'new',
     loadComponent: () => import('./new-ticket/new-ticket').then((m) => m.NewTicket),
   },
+  {
+    path: ':id',
+    loadComponent: () => import('./ticket-details/ticket-details').then((m) => m.TicketDetails),
+  },
 ];

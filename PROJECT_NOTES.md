@@ -292,6 +292,15 @@ Part 3 is done, in the shell's `src/app/core/`:
 
 Known limits: the sidebar's name "Alex Morgan" is still hardcoded. A malicious script cannot read the cookie, but it could still send requests while the page is open, so preventing XSS still matters, especially once ticket descriptions are displayed.
 
+## 26. Ticket details page
+
+Clicking a subject in the tickets table opens `/dashboard/tickets/<id>`. The page is read-only and is in `projects/tickets/src/app/tickets/ticket-details/`.
+
+- `GET /api/tickets/:id` returns one ticket, or a 404. It needs a login, like the other ticket routes.
+- The page shows the subject, ID, description, status, priority, topic, assignee, requester and last update, plus messages for loading, not found and failed requests.
+- The description is displayed with `[innerHTML]`, which makes Angular remove scripts and other unsafe HTML.
+- The status badge styles moved to `_status-badge.scss` and its classes to `ticket-options.ts`, so the table and this page share them.
+
 Problems met so far:
 
 - `Could not resolve "node:path/posix"`: fixed by adding `'@angular/cdk/schematics'` to `skip` in the remote's `federation.config.mjs`. Any remote using Material or CDK needs this.
