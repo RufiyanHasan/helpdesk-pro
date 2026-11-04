@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "node --watch --env-file=.env server.ts",
     "seed": "node seed.ts",
-    "create-admin": "node create-admin.ts"
+    "create-admin": "node --env-file=.env create-admin.ts"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

@@ -1,8 +1,13 @@
 import { hashPassword } from './auth.ts';
 import { db } from './db.ts';
 
-const USERNAME = 'admin';
-const PASSWORD = 'welcome123';
+const USERNAME = process.env.ADMIN_USERNAME;
+const PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!USERNAME || !PASSWORD) {
+  console.error('Set ADMIN_USERNAME and ADMIN_PASSWORD in .env first');
+  process.exit(1);
+}
 
 db.prepare(`
   INSERT INTO users (username, password_hash) VALUES (?, ?)
