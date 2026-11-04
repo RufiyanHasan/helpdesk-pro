@@ -275,7 +275,8 @@ Part 1 is done:
 - `server/.env` holds `JWT_SECRET`, and Git ignores it. `npm run dev` loads it with `--env-file=.env`.
 - `db.ts` has a `users` table, and passwords are stored as `scrypt` hashes.
 - `server/auth.ts` has the password and token helpers, using `jsonwebtoken`. Tokens last 1 hour.
-- `npm run create-admin` creates or updates the admin user without touching tickets.
+- `npm run create-admin` creates or updates the admin user in the `users` table without touching tickets. It reads `ADMIN_USERNAME` and `ADMIN_PASSWORD` from `server/.env`, so no login details are in the code, and it stops if either is blank.
+- `welcome123` was pushed to GitHub in commit `d9600f4` and is still in the Git history, so it must not be used as a password again.
 - `POST /api/login` sets the login cookie, or returns a 401 with the same message for a wrong username or password.
 
 Part 2 is done: `requireAuth` in `auth.ts` checks the login cookie, and `server.ts` applies it to everything under `/api/tickets`. `/api/login` and `/api/logout` stay open.
