@@ -316,6 +316,10 @@ Styles go in `src/settings.css`, with every rule starting `.settings`. `mount.ts
 
 Checked by hand: the React page shows in the shell, its button works, and leaving and returning mounts it again from a fresh state. With the React server stopped, Settings shows the error message and Tickets still works.
 
+## 28. Vanity Page Configuration design
+
+The React Settings page now shows the Vanity Page Configuration layout, in `App.tsx`, `icons.tsx` and `settings.css`. It is only the design so far: the buttons, tabs and side sections don't do anything yet, and the preview text is fixed. Colours come from the shell's CSS variables.
+
 Problems met so far:
 
 - `Could not resolve "node:path/posix"`: fixed by adding `'@angular/cdk/schematics'` to `skip` in the remote's `federation.config.mjs`. Any remote using Material or CDK needs this.
