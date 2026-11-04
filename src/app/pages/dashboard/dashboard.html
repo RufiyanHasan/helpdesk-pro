@@ -35,12 +35,17 @@
       >
     </nav>
 
+    @if (logoutFailed()) {
+      <p class="sidebar__error">Could not log out. Please try again.</p>
+    }
+
     <div class="sidebar__user">
       <span class="sidebar__avatar">AM</span>
       <div>
         <div class="sidebar__user-name">Alex Morgan</div>
         <div class="sidebar__user-role">Admin</div>
       </div>
+      <button class="sidebar__logout" type="button" (click)="logout()">Log out</button>
     </div>
   </aside>
 

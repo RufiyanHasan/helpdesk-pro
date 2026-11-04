@@ -121,6 +121,8 @@ for (let i = 0; i < TOTAL_TICKETS; i++) {
   insert.run({ ...(mockTicketsById.get(id) ?? createTicket(id)) });
 }
 
+db.prepare('UPDATE ticket_counter SET last_number = MAX(last_number, ?)').run(LATEST_TICKET_NUMBER);
+
 db.exec('COMMIT');
 
 console.log(`Seeded ${TOTAL_TICKETS} tickets`);
