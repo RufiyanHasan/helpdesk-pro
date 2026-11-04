@@ -1,6 +1,8 @@
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import { db } from './db.ts';
+import { clearAuthCookie, requireAuth, setAuthCookie, verifyPassword } from './auth.ts';
 
 
 const app = express();
@@ -52,8 +54,11 @@ function orderBy(sortBy: unknown, sortDir: unknown): string {
     return `${SORT_COLUMNS[sortBy]} ${sortDir.toUpperCase()}, id DESC`;
 }
 
-app.use(cors({ origin: ['http://localhost:4200', 'http://localhost:4201'] }));
+app.use(cors({ origin: ['http://localhost:4200', 'http://localhost:4201'], credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
+
+app.use('/api/tickets', requireAuth);
 
 app.post('/api/tickets', (req,res)=>{
     const requesterEmail = text(req.body?.requesterEmail);
@@ -126,4 +131,29 @@ app.get('/api/tickets', (req,res)=>{
 
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
+})
+
+app.post('/api/login', (req,res)=>{
+    const username = text(req.body?.username);
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+
+    const user = db.prepare('SELECT id, username, password_hash FROM users WHERE username = ?').get(username) as
+        { id: number; username: string; password_hash: string } | undefined;
+
+    if (!user || !verifyPassword(password, user.password_hash)) {
+        res.status(401).json({ error: 'Invalid username or password' });
+        return;
+    }
+
+    setAuthCookie(res, user.id, user.username);
+    res.json({ username: user.username });
+})
+
+app.post('/api/logout', (req,res)=>{
+    clearAuthCookie(res);
+    res.status(204).end();
+})
+
+app.get('/api/me', requireAuth, (req,res)=>{
+    res.json({ username: res.locals.username });
 })

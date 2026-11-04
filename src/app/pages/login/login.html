@@ -54,12 +54,12 @@
           @if (form.controls.password.touched && form.controls.password.hasError('required')) {
             <p class="field__error">Password is required.</p>
           }
-          @if (loginFailed()) {
-            <p class="field__error">Invalid username or password.</p>
+          @if (loginError()) {
+            <p class="field__error">{{ loginError() }}</p>
           }
         </div>
 
-        <button class="button button--primary" type="submit">Sign in</button>
+        <button class="button button--primary" type="submit" [disabled]="isSubmitting()">Sign in</button>
       </form>
     </div>
   </main>
