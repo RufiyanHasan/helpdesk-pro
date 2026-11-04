@@ -301,7 +301,23 @@ Clicking a subject in the tickets table opens `/dashboard/tickets/<id>`. The pag
 - The description is displayed with `[innerHTML]`, which makes Angular remove scripts and other unsafe HTML.
 - The status badge styles moved to `_status-badge.scss` and its classes to `ticket-options.ts`, so the table and this page share them.
 
+## 27. React settings remote connected
+
+The Settings page now comes from a React app in `projects/settings`, built with Vite and served on port 4203. It has its own `package.json`, is not part of `angular.json`, and React is not shared with Angular.
+
+- `src/mount.tsx` exports `mount(element)`, which shows React inside an element and returns a function that removes it.
+- `vite.config.ts` builds `mount.tsx` into a fixed `mount.js` file.
+- `public/remoteEntry.json` is written by hand and exposes `./Mount`, so the shell can find it through `public/federation.manifest.json` like the tickets remote.
+- The shell's `settings.ts` loads the remote, mounts it when the page opens and unmounts it when the page closes. If the remote cannot be loaded, the page shows "Could not load settings."
+
+To run it, open two terminals in `projects/settings`: `npm run watch` rebuilds on save, and `npm run preview` serves the build to the shell. Refresh the browser to see a change. `watch` skips type checking, so run `npm run build` before committing.
+
+Styles go in `src/settings.css`, with every rule starting `.settings`. `mount.tsx` imports the file with `?inline`, adds it to the page when mounting and removes it when unmounting. A normal `import './x.css'` would not load in the shell. Use `@import` inside `settings.css` to split styles into more files.
+
+Checked by hand: the React page shows in the shell, its button works, and leaving and returning mounts it again from a fresh state. With the React server stopped, Settings shows the error message and Tickets still works.
+
 Problems met so far:
 
 - `Could not resolve "node:path/posix"`: fixed by adding `'@angular/cdk/schematics'` to `skip` in the remote's `federation.config.mjs`. Any remote using Material or CDK needs this.
 - `ngDevMode is not defined`: caused by running `ng build` while `ng serve` was running. Both use `dist/<app>/browser`, so production files replaced the development ones. Do not run a production build during `ng serve`. If it happens, restart `ng serve`.
+- `Exposed module './Mount' from remote 'settings' not found in storage`: an old `mfe-projects/settings` server was already using port 4203, so the shell read that app's `remoteEntry.json`. Check what is on a port when a remote's modules are missing.

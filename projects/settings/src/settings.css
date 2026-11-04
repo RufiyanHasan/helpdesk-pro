@@ -1,0 +1,13 @@
+.settings {
+  color: var(--text);
+}
+
+.settings button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--white);
+  font: inherit;
+  cursor: pointer;
+}
