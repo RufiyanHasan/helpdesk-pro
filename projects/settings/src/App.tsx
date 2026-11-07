@@ -1,7 +1,16 @@
 import { CheckCircleIcon, ChevronDownIcon, DesktopIcon, FullScreenIcon, MobileIcon } from './icons';
 import { useEffect, useState, type ReactNode } from 'react';
-import { getVanitySection, saveVanitySection } from './api';
+import { deleteLogo, getLogo, getVanitySection, saveLogo, saveVanitySection } from './api';
 import { shownColor } from './colors';
+import {
+  INITIAL_MONOGRAM_LOGO,
+  monogramLogoToSave,
+  NO_LOGO,
+  shownMonogram,
+  type LogoState,
+  type MonogramLogo,
+} from './monogram-logo';
+import MonogramLogoSection from './MonogramLogoSection';
 import {
   CARD_BACKGROUND_DEFAULT,
   INITIAL_PAGE_APPEARANCE,
@@ -43,6 +52,8 @@ export default function App() {
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [pageText, setPageText] = useState(INITIAL_PAGE_TEXT);
   const [pageAppearance, setPageAppearance] = useState(INITIAL_PAGE_APPEARANCE);
+  const [monogramLogo, setMonogramLogo] = useState(INITIAL_MONOGRAM_LOGO);
+  const [logo, setLogo] = useState<LogoState>(NO_LOGO);
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'failed'>('loading');
   const [saveState, setSaveState] = useState<keyof typeof SAVE_MESSAGES>('idle');
 
@@ -51,14 +62,18 @@ export default function App() {
   const pageBackground = shownColor(pageAppearance.pageBackground, PAGE_BACKGROUND_DEFAULT);
   const cardBackground = shownColor(pageAppearance.cardBackground, CARD_BACKGROUND_DEFAULT);
   const buttonRadius = pageAppearance.buttonCorners === 'square' ? 0 : undefined;
+  const monogram = shownMonogram(monogramLogo, districtName.text);
+  const showLogo = monogramLogo.show === 'logo' && logo.url !== null;
 
   useEffect(() => {
     let cancelled = false;
     Promise.all([
       getVanitySection<PageText>('page-text'),
       getVanitySection<PageAppearance>('page-appearance'),
+      getVanitySection<MonogramLogo>('monogram-logo'),
+      getLogo(),
     ])
-      .then(([savedText, savedAppearance]) => {
+      .then(([savedText, savedAppearance, savedMonogram, savedLogo]) => {
         if (cancelled) {
           return;
         }
@@ -67,6 +82,12 @@ export default function App() {
         }
         if (savedAppearance) {
           setPageAppearance(savedAppearance);
+        }
+        if (savedMonogram) {
+          setMonogramLogo(savedMonogram);
+        }
+        if (savedLogo) {
+          setLogo({ url: URL.createObjectURL(savedLogo), file: null, changed: false });
         }
         setLoadState('loaded');
       })
@@ -90,19 +111,43 @@ export default function App() {
     setSaveState('idle');
   }
 
+  function changeMonogramLogo(value: MonogramLogo): void {
+    setMonogramLogo(value);
+    setSaveState('idle');
+  }
+
+  function changeLogo(value: LogoState): void {
+    setLogo(value);
+    setSaveState('idle');
+  }
+
+  // Uploads a newly chosen logo, or deletes a removed one. An unchanged logo isn't sent again.
+  function saveLogoChange(value: LogoState): Promise<void> | null {
+    if (!value.changed) {
+      return null;
+    }
+    return value.file ? saveLogo(value.file) : deleteLogo();
+  }
+
   async function save(): Promise<void> {
     const textToSave = pageTextToSave(pageText);
     const appearanceToSave = pageAppearanceToSave(pageAppearance);
-    if (!textToSave || !appearanceToSave) {
+    const monogramToSave = monogramLogoToSave(monogramLogo);
+    if (!textToSave || !appearanceToSave || !monogramToSave) {
       setSaveState('invalid');
       return;
     }
+    const logoToSave = logo;
     setSaveState('saving');
     try {
       await Promise.all([
         saveVanitySection('page-text', textToSave),
         saveVanitySection('page-appearance', appearanceToSave),
+        saveVanitySection('monogram-logo', monogramToSave),
+        saveLogoChange(logoToSave),
       ]);
+      // A logo chosen while saving is still waiting to be uploaded, so it stays marked as changed.
+      setLogo((current) => (current === logoToSave ? { ...current, file: null, changed: false } : current));
       setSaveState('saved');
     } catch {
       setSaveState('failed');
@@ -115,6 +160,15 @@ export default function App() {
 
   const panels: Record<string, ReactNode> = {
     'Page Appearance': <PageAppearanceSection value={pageAppearance} onChange={changePageAppearance} />,
+    'Monogram & Logo': (
+      <MonogramLogoSection
+        value={monogramLogo}
+        logo={logo}
+        districtName={districtName.text}
+        onChange={changeMonogramLogo}
+        onLogoChange={changeLogo}
+      />
+    ),
     'Page Text': <PageTextSection value={pageText} onChange={changePageText} />,
   };
 
@@ -154,7 +208,13 @@ export default function App() {
           <div className="preview" style={{ background: pageBackground }}>
             <div className="preview__page" style={{ background: cardBackground }}>
               <div className="preview__body">
-                <span className="preview__monogram">L</span>
+                {showLogo ? (
+                  <img className="preview__logo" src={logo.url ?? undefined} alt="Logo" />
+                ) : (
+                  <span className="preview__monogram" style={{ background: monogram.background, color: monogram.color }}>
+                    {monogram.letters}
+                  </span>
+                )}
                 {pageText.districtName.show && (
                   <h2 className="preview__name" style={{ color: districtName.color }}>
                     {districtName.text}

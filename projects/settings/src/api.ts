@@ -1,23 +1,47 @@
 const VANITY_PAGE_URL = 'http://localhost:3000/api/vanity-page';
+const LOGO_URL = `${VANITY_PAGE_URL}/logo`;
 
 // The login cookie is only sent to the API with credentials: 'include'.
-async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
+async function send(url: string, init: RequestInit = {}): Promise<Response> {
   const response = await fetch(url, { ...init, credentials: 'include' });
   if (!response.ok) {
     throw new Error(`${response.status} ${response.statusText}`);
   }
-  return response.json() as Promise<T>;
+  return response;
 }
 
 // null means the user hasn't saved this section yet.
-export function getVanitySection<T>(section: string): Promise<T | null> {
-  return request<T | null>(`${VANITY_PAGE_URL}/${section}`);
+export async function getVanitySection<T>(section: string): Promise<T | null> {
+  const response = await send(`${VANITY_PAGE_URL}/${section}`);
+  return response.json() as Promise<T | null>;
 }
 
-export function saveVanitySection<T>(section: string, settings: T): Promise<T> {
-  return request<T>(`${VANITY_PAGE_URL}/${section}`, {
+export async function saveVanitySection<T>(section: string, settings: T): Promise<T> {
+  const response = await send(`${VANITY_PAGE_URL}/${section}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settings),
   });
+  return response.json() as Promise<T>;
+}
+
+// null means the user hasn't uploaded a logo.
+export async function getLogo(): Promise<Blob | null> {
+  const response = await fetch(LOGO_URL, { credentials: 'include' });
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(`${response.status} ${response.statusText}`);
+  }
+  return response.blob();
+}
+
+// The file is sent as it is, with its type in the Content-Type header.
+export async function saveLogo(file: File): Promise<void> {
+  await send(LOGO_URL, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+}
+
+export async function deleteLogo(): Promise<void> {
+  await send(LOGO_URL, { method: 'DELETE' });
 }

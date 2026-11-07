@@ -365,3 +365,62 @@
 .settings .text-group__fields:disabled {
   opacity: 0.5;
 }
+/* Round like the monogram. A logo that isn't square is cropped to fill the circle. */
+.settings .preview__logo {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.settings .logo-upload__current {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.settings .logo-upload__thumbnail {
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border-light);
+  border-radius: 50%;
+  background: var(--white);
+  object-fit: cover;
+}
+
+.settings .logo-upload__remove {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--error);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.settings .logo-upload__button {
+  position: relative;
+}
+
+.settings .logo-upload__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.settings .logo-upload__hint {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.settings .logo-upload__error {
+  margin: 8px 0 0;
+  color: var(--error);
+  font-size: 13px;
+}

@@ -52,3 +52,12 @@ db.exec(`
     PRIMARY KEY (user_id, section)
   )
 `);
+
+// Each user's uploaded vanity page logo, stored as the file's bytes.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS vanity_page_logos (
+    user_id INTEGER PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+    content_type TEXT NOT NULL,
+    data BLOB NOT NULL
+  )
+`);

@@ -32,6 +32,25 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 const MAX_PAGE_TEXT_LENGTH = 100;
 const BUTTON_CORNERS = ['rounded', 'square'];
+const BRAND_MARKS = ['monogram', 'logo'];
+const MAX_MONOGRAM_LETTERS = 2;
+const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml'];
+const MAX_LOGO_BYTES = 1024 * 1024;
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+// Checks the file's contents really match its type, instead of trusting the header the browser sent.
+function isLogoFile(type: string, data: Buffer): boolean {
+    if (type === 'image/png') {
+        return data.subarray(0, 8).equals(PNG_SIGNATURE);
+    }
+    if (type === 'image/jpeg') {
+        return data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
+    }
+    if (type === 'image/svg+xml') {
+        return /<svg[\s>]/i.test(data.toString('utf8'));
+    }
+    return false;
+}
 
 function text(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
@@ -83,6 +102,23 @@ const VANITY_SECTIONS: Record<string, (body: Record<string, unknown>) => object 
             return null;
         }
         return { pageBackground, cardBackground, buttonCorners };
+    },
+    'monogram-logo': (body) => {
+        const background = colorSetting(body.background);
+        const letterColor = colorSetting(body.letterColor);
+        const { show, useCustomLetters, customLetters } = body;
+        if (
+            !background ||
+            !letterColor ||
+            typeof show !== 'string' ||
+            !BRAND_MARKS.includes(show) ||
+            typeof useCustomLetters !== 'boolean' ||
+            typeof customLetters !== 'string' ||
+            customLetters.length > MAX_MONOGRAM_LETTERS
+        ) {
+            return null;
+        }
+        return { show, useCustomLetters, customLetters, background, letterColor };
     },
 };
 
@@ -193,6 +229,57 @@ app.get('/api/tickets/:id', (req,res)=>{
 })
 
 app.use('/api/vanity-page', requireAuth);
+
+// The logo is a file, so it has its own routes. They come before the section routes, which would
+// otherwise answer "Unknown section".
+app.get('/api/vanity-page/logo', (req,res)=>{
+    const row = db.prepare('SELECT content_type, data FROM vanity_page_logos WHERE user_id = ?').get(res.locals.userId) as
+        { content_type: string; data: Uint8Array } | undefined;
+
+    if (!row) {
+        res.status(404).json({ error: 'No logo' });
+        return;
+    }
+
+    // An SVG can contain scripts. These headers stop them running if the file is opened directly.
+    res.set({
+        'Content-Type': row.content_type,
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'no-store',
+    });
+    res.send(Buffer.from(row.data));
+})
+
+app.put('/api/vanity-page/logo', express.raw({ type: LOGO_TYPES, limit: MAX_LOGO_BYTES }), (req,res)=>{
+    const type = (req.get('Content-Type') ?? '').split(';')[0].trim().toLowerCase();
+
+    if (!Buffer.isBuffer(req.body) || !isLogoFile(type, req.body)) {
+        res.status(400).json({ error: 'Invalid logo' });
+        return;
+    }
+
+    db.prepare(`
+        INSERT INTO vanity_page_logos (user_id, content_type, data) VALUES (?, ?, ?)
+        ON CONFLICT (user_id) DO UPDATE SET content_type = excluded.content_type, data = excluded.data
+    `).run(res.locals.userId, type, req.body);
+
+    res.status(204).end();
+})
+
+app.delete('/api/vanity-page/logo', (req,res)=>{
+    db.prepare('DELETE FROM vanity_page_logos WHERE user_id = ?').run(res.locals.userId);
+    res.status(204).end();
+})
+
+// A logo over 1 MB is rejected by express.raw. This turns that into a JSON error like the others.
+app.use('/api/vanity-page/logo', (err: { type?: string }, req: express.Request, res: express.Response, next: express.NextFunction)=>{
+    if (err.type === 'entity.too.large') {
+        res.status(413).json({ error: 'Logo is larger than 1 MB' });
+        return;
+    }
+    next(err);
+})
 
 app.use('/api/vanity-page/:section', (req,res,next)=>{
     if (!Object.hasOwn(VANITY_SECTIONS, req.params.section)) {

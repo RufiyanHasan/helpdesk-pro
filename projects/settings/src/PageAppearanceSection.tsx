@@ -1,46 +1,10 @@
-import ColorField from './ColorField';
-import { shownColor, type ColorSetting } from './colors';
+import ColorGroup from './ColorGroup';
 import {
   CARD_BACKGROUND_DEFAULT,
   PAGE_BACKGROUND_DEFAULT,
   type ButtonCorners,
   type PageAppearance,
 } from './page-appearance';
-
-interface ColorGroupProps {
-  id: string;
-  label: string;
-  defaultColor: string;
-  setting: ColorSetting;
-  onChange: (changes: Partial<ColorSetting>) => void;
-}
-
-function ColorGroup({ id, label, defaultColor, setting, onChange }: ColorGroupProps) {
-  const isCustom = setting.useCustom;
-
-  return (
-    <div className="text-group">
-      <span className="field-label">{label}</span>
-      <div className="choice-row">
-        <label className="choice">
-          <input type="radio" name={`${id}-mode`} checked={!isCustom} onChange={() => onChange({ useCustom: false })} />
-          Default
-        </label>
-        <label className="choice">
-          <input type="radio" name={`${id}-mode`} checked={isCustom} onChange={() => onChange({ useCustom: true })} />
-          Custom
-        </label>
-      </div>
-      <ColorField
-        label={label}
-        value={isCustom ? setting.customColor : defaultColor}
-        color={shownColor(setting, defaultColor)}
-        disabled={!isCustom}
-        onChange={(customColor) => onChange({ customColor })}
-      />
-    </div>
-  );
-}
 
 const BUTTON_CORNER_OPTIONS: { value: ButtonCorners; label: string }[] = [
   { value: 'rounded', label: 'Rounded' },
