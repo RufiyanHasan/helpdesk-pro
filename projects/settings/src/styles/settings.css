@@ -197,6 +197,37 @@
   margin-top: 12px;
 }
 
+.settings .sign-in__option--google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-color: #747775;
+  font-weight: 500;
+}
+
+.settings .google-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* "or" with a line on each side, between Google and the other options. */
+.settings .sign-in__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.settings .sign-in__divider::before,
+.settings .sign-in__divider::after {
+  flex: 1;
+  border-top: 1px solid var(--border-light);
+  content: '';
+}
+
 .settings .sign-in__option--guest {
   border-color: var(--border-light);
   color: var(--text-muted);

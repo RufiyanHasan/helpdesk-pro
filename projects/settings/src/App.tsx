@@ -1,6 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ApiError, deleteLogo, getLogo, getVanitySection, saveLogo, saveVanitySection } from './api/vanity-page';
-import { CheckCircleIcon, ChevronDownIcon, DesktopIcon, FullScreenIcon, MobileIcon } from './components/icons';
+import {
+  CheckCircleIcon,
+  ChevronDownIcon,
+  DesktopIcon,
+  FullScreenIcon,
+  GoogleIcon,
+  MobileIcon,
+} from './components/icons';
 import { shownColor } from './lib/colors';
 import { shownText } from './lib/text';
 import {
@@ -53,6 +60,13 @@ import {
 } from './sections/sign-in-block/sign-in-block';
 import SignInBlockSection from './sections/sign-in-block/SignInBlockSection';
 import {
+  GOOGLE_DEFAULTS,
+  INITIAL_SSO_SIGN_IN,
+  ssoSignInToSave,
+  type SsoSignIn,
+} from './sections/sso-sign-in/sso-sign-in';
+import SsoSignInSection from './sections/sso-sign-in/SsoSignInSection';
+import {
   INITIAL_URL_CONFIGURATION,
   isValidSlug,
   VANITY_BASE_URL,
@@ -88,6 +102,7 @@ export default function App() {
   const [monogramLogo, setMonogramLogo] = useState(INITIAL_MONOGRAM_LOGO);
   const [logo, setLogo] = useState<LogoState>(NO_LOGO);
   const [signInBlock, setSignInBlock] = useState(INITIAL_SIGN_IN_BLOCK);
+  const [ssoSignIn, setSsoSignIn] = useState(INITIAL_SSO_SIGN_IN);
   const [alternateSignIn, setAlternateSignIn] = useState(INITIAL_ALTERNATE_SIGN_IN);
   const [footer, setFooter] = useState(INITIAL_FOOTER);
   const [urlConfiguration, setUrlConfiguration] = useState(INITIAL_URL_CONFIGURATION);
@@ -107,8 +122,10 @@ export default function App() {
     border: signInBlock.showBorder ? undefined : 'none',
     borderRadius: signInBlock.corners === 'square' ? 0 : undefined,
   };
+  const googleButton = shownText(ssoSignIn.google, GOOGLE_DEFAULTS);
   const emailButton = shownText(alternateSignIn.email, EMAIL_DEFAULTS);
   const guestButton = shownText(alternateSignIn.guest, GUEST_DEFAULTS);
+  const showAlternateOptions = alternateSignIn.email.show || alternateSignIn.guest.show;
   const copyright = shownText(footer.copyright, copyrightDefaults(districtName.text));
   const footerBackground = shownColor(footer.background, FOOTER_BACKGROUND_DEFAULT);
 
@@ -123,6 +140,7 @@ export default function App() {
       getVanitySection<AlternateSignIn>('alternate-sign-in'),
       getVanitySection<Footer>('footer'),
       getVanitySection<UrlConfiguration>('url-configuration'),
+      getVanitySection<SsoSignIn>('sso-sign-in'),
     ])
       .then(
         ([
@@ -134,6 +152,7 @@ export default function App() {
           savedAlternateSignIn,
           savedFooter,
           savedUrlConfiguration,
+          savedSsoSignIn,
         ]) => {
         if (cancelled) {
           return;
@@ -161,6 +180,9 @@ export default function App() {
         }
         if (savedUrlConfiguration) {
           setUrlConfiguration(savedUrlConfiguration);
+        }
+        if (savedSsoSignIn) {
+          setSsoSignIn(savedSsoSignIn);
         }
         setLoadState('loaded');
         },
@@ -200,6 +222,11 @@ export default function App() {
     setSaveState('idle');
   }
 
+  function changeSsoSignIn(value: SsoSignIn): void {
+    setSsoSignIn(value);
+    setSaveState('idle');
+  }
+
   function changeAlternateSignIn(value: AlternateSignIn): void {
     setAlternateSignIn(value);
     setSaveState('idle');
@@ -228,6 +255,7 @@ export default function App() {
     const appearanceToSave = pageAppearanceToSave(pageAppearance);
     const monogramToSave = monogramLogoToSave(monogramLogo);
     const signInBlockToSaveNow = signInBlockToSave(signInBlock);
+    const ssoSignInToSaveNow = ssoSignInToSave(ssoSignIn);
     const alternateSignInToSaveNow = alternateSignInToSave(alternateSignIn);
     const footerToSaveNow = footerToSave(footer);
     if (
@@ -235,6 +263,7 @@ export default function App() {
       !appearanceToSave ||
       !monogramToSave ||
       !signInBlockToSaveNow ||
+      !ssoSignInToSaveNow ||
       !alternateSignInToSaveNow ||
       !footerToSaveNow
     ) {
@@ -254,6 +283,7 @@ export default function App() {
         saveVanitySection('monogram-logo', monogramToSave),
         saveLogoChange(logoToSave),
         saveVanitySection('sign-in-block', signInBlockToSaveNow),
+        saveVanitySection('sso-sign-in', ssoSignInToSaveNow),
         saveVanitySection('alternate-sign-in', alternateSignInToSaveNow),
         saveVanitySection('footer', footerToSaveNow),
         saveVanitySection('url-configuration', urlConfiguration),
@@ -285,6 +315,7 @@ export default function App() {
     ),
     'Page Text': <PageTextSection value={pageText} onChange={changePageText} />,
     'Sign-in Block': <SignInBlockSection value={signInBlock} onChange={changeSignInBlock} />,
+    'SSO Sign In Options': <SsoSignInSection value={ssoSignIn} onChange={changeSsoSignIn} />,
     'Alternate Sign-in Options': <AlternateSignInSection value={alternateSignIn} onChange={changeAlternateSignIn} />,
     Footer: <FooterSection value={footer} districtName={districtName.text} onChange={changeFooter} />,
   };
@@ -354,6 +385,21 @@ export default function App() {
                     <h3 className="sign-in__title" style={{ color: signInHeading.color }}>
                       {signInHeading.text}
                     </h3>
+                  )}
+                  {ssoSignIn.google.show && (
+                    <button
+                      className="sign-in__option sign-in__option--google"
+                      type="button"
+                      style={{ borderRadius: buttonRadius, color: googleButton.color }}
+                    >
+                      <GoogleIcon />
+                      {googleButton.text}
+                    </button>
+                  )}
+                  {ssoSignIn.google.show && showAlternateOptions && (
+                    <p className="sign-in__divider">
+                      <span>or</span>
+                    </p>
                   )}
                   {alternateSignIn.email.show && (
                     <button

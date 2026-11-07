@@ -137,6 +137,10 @@ const VANITY_SECTIONS: Record<string, (body: Record<string, unknown>) => object 
         }
         return { heading, cardBackground, showBorder, corners };
     },
+    'sso-sign-in': (body) => {
+        const google = textSetting(body.google);
+        return google ? { google } : null;
+    },
     'alternate-sign-in': (body) => {
         const email = textSetting(body.email);
         const guest = textSetting(body.guest);
