@@ -129,6 +129,17 @@ app.get('/api/tickets', (req,res)=>{
     res.json({ tickets, total });
 })
 
+app.get('/api/tickets/:id', (req,res)=>{
+    const ticket = db.prepare('SELECT * FROM tickets WHERE id = ?').get(req.params.id);
+
+    if (!ticket) {
+        res.status(404).json({ error: 'Ticket not found' });
+        return;
+    }
+
+    res.json(ticket);
+})
+
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 })

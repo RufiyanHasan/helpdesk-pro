@@ -1,0 +1,27 @@
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+
+  &--open {
+    background: var(--status-open-bg);
+    color: var(--status-open-text);
+  }
+
+  &--in-progress {
+    background: var(--status-in-progress-bg);
+    color: var(--status-in-progress-text);
+  }
+
+  &--overdue {
+    background: var(--status-overdue-bg);
+    color: var(--status-overdue-text);
+  }
+
+  &--resolved {
+    background: var(--status-resolved-bg);
+    color: var(--status-resolved-text);
+  }
+}

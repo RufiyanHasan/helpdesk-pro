@@ -1,6 +1,13 @@
 export const STATUSES = ['Open', 'In progress', 'Overdue', 'Resolved'];
 
-export const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
+export const STATUS_CLASSES: Record<string, string> = {
+  Open: 'badge--open',
+  'In progress': 'badge--in-progress',
+  Overdue: 'badge--overdue',
+  Resolved: 'badge--resolved',
+};
+
+export const PRIORITIES =['Low', 'Medium', 'High', 'Urgent'];
 
 export const ASSIGNEES = ['Alex M.', 'Daniel K.', 'Maria L.', 'Priya S.', 'Unassigned'];
 
