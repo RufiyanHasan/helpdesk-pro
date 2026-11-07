@@ -29,9 +29,30 @@ const FILTER_COLUMNS = ['status', 'priority', 'assignee', 'topic'];
 const TOPICS = ['Account access', 'Billing', 'Branding', 'Content', 'Integrations', 'Performance', 'Reports'];
 const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const MAX_PAGE_TEXT_LENGTH = 100;
 
 function text(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
+}
+
+// Checks one Page Text group from the browser, and keeps only the fields the page uses.
+function textSetting(value: unknown) {
+    if (typeof value !== 'object' || value === null) {
+        return null;
+    }
+    const { show, useCustom, customText, customColor } = value as Record<string, unknown>;
+    if (
+        typeof show !== 'boolean' ||
+        typeof useCustom !== 'boolean' ||
+        typeof customText !== 'string' ||
+        customText.length > MAX_PAGE_TEXT_LENGTH ||
+        typeof customColor !== 'string' ||
+        !HEX_COLOR.test(customColor)
+    ) {
+        return null;
+    }
+    return { show, useCustom, customText, customColor };
 }
 
 function nextTicketId(): string {
@@ -138,6 +159,36 @@ app.get('/api/tickets/:id', (req,res)=>{
     }
 
     res.json(ticket);
+})
+
+app.use('/api/vanity-page', requireAuth);
+
+app.get('/api/vanity-page/page-text', (req,res)=>{
+    const row = db.prepare(`
+        SELECT settings FROM vanity_page_sections WHERE user_id = ? AND section = 'page-text'
+    `).get(res.locals.userId) as { settings: string } | undefined;
+
+    // Nothing saved yet, so the page keeps its own defaults.
+    res.json(row ? JSON.parse(row.settings) : null);
+})
+
+app.put('/api/vanity-page/page-text', (req,res)=>{
+    const districtName = textSetting(req.body?.districtName);
+    const subtext = textSetting(req.body?.subtext);
+
+    if (!districtName || !subtext) {
+        res.status(400).json({ error: 'Invalid page text' });
+        return;
+    }
+
+    const pageText = { districtName, subtext };
+
+    db.prepare(`
+        INSERT INTO vanity_page_sections (user_id, section, settings) VALUES (?, 'page-text', ?)
+        ON CONFLICT (user_id, section) DO UPDATE SET settings = excluded.settings
+    `).run(res.locals.userId, JSON.stringify(pageText));
+
+    res.json(pageText);
 })
 
 app.listen(PORT, () => {

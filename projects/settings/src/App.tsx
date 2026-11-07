@@ -1,7 +1,23 @@
 import { CheckCircleIcon, ChevronDownIcon, DesktopIcon, FullScreenIcon, MobileIcon } from './icons';
-import { useState } from 'react';
-import { DISTRICT_NAME_DEFAULTS, INITIAL_PAGE_TEXT, shownText, SUBTEXT_DEFAULTS } from './page-text';
+import { useEffect, useState } from 'react';
+import { getPageText, savePageText } from './api';
+import {
+  DISTRICT_NAME_DEFAULTS,
+  INITIAL_PAGE_TEXT,
+  pageTextToSave,
+  shownText,
+  SUBTEXT_DEFAULTS,
+  type PageText,
+} from './page-text';
 import PageTextSection from './PagetextSection';
+
+const SAVE_MESSAGES = {
+  idle: '',
+  saving: 'Saving...',
+  saved: 'Saved',
+  invalid: 'Enter a full colour code, like #C02020, before saving.',
+  failed: 'Could not save. Please try again.',
+};
 
 const SECTIONS = [
   'URL Configuration',
@@ -17,16 +33,65 @@ const SECTIONS = [
 export default function App() {
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [pageText, setPageText] = useState(INITIAL_PAGE_TEXT);
+  const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'failed'>('loading');
+  const [saveState, setSaveState] = useState<keyof typeof SAVE_MESSAGES>('idle');
 
   const districtName = shownText(pageText.districtName, DISTRICT_NAME_DEFAULTS);
   const subtext = shownText(pageText.subtext, SUBTEXT_DEFAULTS);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPageText()
+      .then((saved) => {
+        if (cancelled) {
+          return;
+        }
+        if (saved) {
+          setPageText(saved);
+        }
+        setLoadState('loaded');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoadState('failed');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function changePageText(value: PageText): void {
+    setPageText(value);
+    setSaveState('idle');
+  }
+
+  async function save(): Promise<void> {
+    const toSave = pageTextToSave(pageText);
+    if (!toSave) {
+      setSaveState('invalid');
+      return;
+    }
+    setSaveState('saving');
+    try {
+      await savePageText(toSave);
+      setSaveState('saved');
+    } catch {
+      setSaveState('failed');
+    }
+  }
+
+  // Saving before the user's settings have loaded would overwrite them with the defaults.
+  const canSave = loadState === 'loaded' && saveState !== 'saving';
+  const statusMessage = loadState === 'failed' ? 'Could not load your saved settings.' : SAVE_MESSAGES[saveState];
 
   return (
     <div className="settings">
       <header className="page-header">
         <h1 className="page-header__title">Vanity Page Configuration</h1>
         <div className="page-header__actions">
-          <button className="button button--secondary" type="button">
+          {statusMessage && <span className="page-header__status">{statusMessage}</span>}
+          <button className="button button--secondary" type="button" disabled={!canSave} onClick={save}>
             Save
           </button>
           <button className="button button--primary" type="button" disabled>
@@ -107,7 +172,7 @@ export default function App() {
                 {isOpen && (
                   <div className="section__body">
                     {section === 'Page Text' ? (
-                      <PageTextSection value={pageText} onChange={setPageText} />
+                      <PageTextSection value={pageText} onChange={changePageText} />
                     ) : (
                       `${section} settings will go here.`
                     )}

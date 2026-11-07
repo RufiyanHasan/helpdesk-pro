@@ -1,5 +1,6 @@
 import {
   DISTRICT_NAME_DEFAULTS,
+  MAX_TEXT_LENGTH,
   shownText,
   SUBTEXT_DEFAULTS,
   type PageText,
@@ -55,6 +56,7 @@ function TextGroup({ id, showLabel, fieldLabel, defaults, setting, onChange }: T
           type="text"
           value={isCustom ? setting.customText : defaults.text}
           disabled={!isCustom}
+          maxLength={MAX_TEXT_LENGTH}
           onChange={(event) => onChange({ customText: event.target.value })}
         />
 

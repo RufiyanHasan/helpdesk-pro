@@ -322,7 +322,9 @@ The React Settings page now shows the Vanity Page Configuration layout, in `App.
 
 - The side sections open and close, one at a time.
 - Page Text works (`PagetextSection.tsx`, `page-text.ts`). For the district name and the subtext, you can hide the text, or choose Custom and change the text and colour. The preview updates as you type. The settings live in `App`'s state, so they are lost on refresh until Save works.
-- Save, Publish, the view tabs, Full Screen Preview and the other sections don't do anything yet.
+- Backend: each user has their own vanity page. The `vanity_page_sections` table in `db.ts` has one row per user and section, with the settings as JSON. `requireAuth` now also puts the logged-in user's ID in `res.locals.userId`. `GET /api/vanity-page/page-text` returns that user's saved Page Text, or `null` if they haven't saved any. `PUT` saves it after checking every field, so a half-typed colour or text over 100 characters is rejected. Both need a login.
+- Frontend: `src/api.ts` in the React app calls both routes with `fetch` and `credentials: 'include'`, so the login cookie is sent. The page loads the user's saved Page Text when it opens, and Save sends it. Save is disabled until loading succeeds, so a failed load can't overwrite saved settings with the defaults. A half-typed custom colour stops the save with a message. Running React on its own at `localhost:5173` can't call the API, because the server only allows ports 4200 and 4201.
+- Publish, the view tabs, Full Screen Preview and the other sections don't do anything yet.
 
 Problems met so far:
 

@@ -46,6 +46,7 @@ export function hashPassword(password: string): string {
   export function requireAuth(req: Request, res: Response, next: NextFunction): void {
     try {
       const payload = jwt.verify(req.cookies[COOKIE_NAME], jwtSecret(), { algorithms: ['HS256'] }) as JwtPayload;
+      res.locals.userId = Number(payload.sub);
       res.locals.username = payload.username;
       next();
     } catch {

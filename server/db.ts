@@ -42,3 +42,13 @@ db.exec(`
     password_hash TEXT NOT NULL
   )
 `);
+
+// Each user has their own vanity page: one row per user and section, with the settings stored as JSON.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS vanity_page_sections (
+    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    section TEXT NOT NULL,
+    settings TEXT NOT NULL,
+    PRIMARY KEY (user_id, section)
+  )
+`);
