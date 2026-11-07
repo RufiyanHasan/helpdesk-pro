@@ -270,7 +270,8 @@
   box-shadow: inset 0 0 0 2px var(--primary);
 }
 
-.settings .page-text {
+.settings .page-text,
+.settings .page-appearance {
   color: var(--text);
 }
 

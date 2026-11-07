@@ -1,3 +1,4 @@
+import ColorField from './ColorField';
 import {
   DISTRICT_NAME_DEFAULTS,
   MAX_TEXT_LENGTH,
@@ -61,25 +62,13 @@ function TextGroup({ id, showLabel, fieldLabel, defaults, setting, onChange }: T
         />
 
         <span className="color-label">Text Color</span>
-        <div className="color-row">
-          <input
-            className="color-swatch"
-            type="color"
-            value={color.toLowerCase()}
-            disabled={!isCustom}
-            aria-label={`${fieldLabel} color picker`}
-            onChange={(event) => onChange({ customColor: event.target.value.toUpperCase() })}
-          />
-          <input
-            className="text-input"
-            type="text"
-            value={isCustom ? setting.customColor : defaults.color}
-            disabled={!isCustom}
-            maxLength={7}
-            aria-label={`${fieldLabel} color`}
-            onChange={(event) => onChange({ customColor: event.target.value })}
-          />
-        </div>
+        <ColorField
+          label={`${fieldLabel} color`}
+          value={isCustom ? setting.customColor : defaults.color}
+          color={color}
+          disabled={!isCustom}
+          onChange={(customColor) => onChange({ customColor })}
+        />
       </fieldset>
     </div>
   );

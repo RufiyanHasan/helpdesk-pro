@@ -1,6 +1,14 @@
 import { CheckCircleIcon, ChevronDownIcon, DesktopIcon, FullScreenIcon, MobileIcon } from './icons';
-import { useEffect, useState } from 'react';
-import { getPageText, savePageText } from './api';
+import { useEffect, useState, type ReactNode } from 'react';
+import { getVanitySection, saveVanitySection } from './api';
+import { shownColor } from './colors';
+import {
+  CARD_BACKGROUND_DEFAULT,
+  INITIAL_PAGE_APPEARANCE,
+  PAGE_BACKGROUND_DEFAULT,
+  pageAppearanceToSave,
+  type PageAppearance,
+} from './page-appearance';
 import {
   DISTRICT_NAME_DEFAULTS,
   INITIAL_PAGE_TEXT,
@@ -9,6 +17,7 @@ import {
   SUBTEXT_DEFAULTS,
   type PageText,
 } from './page-text';
+import PageAppearanceSection from './PageAppearanceSection';
 import PageTextSection from './PagetextSection';
 
 const SAVE_MESSAGES = {
@@ -33,21 +42,31 @@ const SECTIONS = [
 export default function App() {
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [pageText, setPageText] = useState(INITIAL_PAGE_TEXT);
+  const [pageAppearance, setPageAppearance] = useState(INITIAL_PAGE_APPEARANCE);
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'failed'>('loading');
   const [saveState, setSaveState] = useState<keyof typeof SAVE_MESSAGES>('idle');
 
   const districtName = shownText(pageText.districtName, DISTRICT_NAME_DEFAULTS);
   const subtext = shownText(pageText.subtext, SUBTEXT_DEFAULTS);
+  const pageBackground = shownColor(pageAppearance.pageBackground, PAGE_BACKGROUND_DEFAULT);
+  const cardBackground = shownColor(pageAppearance.cardBackground, CARD_BACKGROUND_DEFAULT);
+  const buttonRadius = pageAppearance.buttonCorners === 'square' ? 0 : undefined;
 
   useEffect(() => {
     let cancelled = false;
-    getPageText()
-      .then((saved) => {
+    Promise.all([
+      getVanitySection<PageText>('page-text'),
+      getVanitySection<PageAppearance>('page-appearance'),
+    ])
+      .then(([savedText, savedAppearance]) => {
         if (cancelled) {
           return;
         }
-        if (saved) {
-          setPageText(saved);
+        if (savedText) {
+          setPageText(savedText);
+        }
+        if (savedAppearance) {
+          setPageAppearance(savedAppearance);
         }
         setLoadState('loaded');
       })
@@ -66,15 +85,24 @@ export default function App() {
     setSaveState('idle');
   }
 
+  function changePageAppearance(value: PageAppearance): void {
+    setPageAppearance(value);
+    setSaveState('idle');
+  }
+
   async function save(): Promise<void> {
-    const toSave = pageTextToSave(pageText);
-    if (!toSave) {
+    const textToSave = pageTextToSave(pageText);
+    const appearanceToSave = pageAppearanceToSave(pageAppearance);
+    if (!textToSave || !appearanceToSave) {
       setSaveState('invalid');
       return;
     }
     setSaveState('saving');
     try {
-      await savePageText(toSave);
+      await Promise.all([
+        saveVanitySection('page-text', textToSave),
+        saveVanitySection('page-appearance', appearanceToSave),
+      ]);
       setSaveState('saved');
     } catch {
       setSaveState('failed');
@@ -84,6 +112,11 @@ export default function App() {
   // Saving before the user's settings have loaded would overwrite them with the defaults.
   const canSave = loadState === 'loaded' && saveState !== 'saving';
   const statusMessage = loadState === 'failed' ? 'Could not load your saved settings.' : SAVE_MESSAGES[saveState];
+
+  const panels: Record<string, ReactNode> = {
+    'Page Appearance': <PageAppearanceSection value={pageAppearance} onChange={changePageAppearance} />,
+    'Page Text': <PageTextSection value={pageText} onChange={changePageText} />,
+  };
 
   return (
     <div className="settings">
@@ -118,8 +151,8 @@ export default function App() {
             </button>
           </div>
 
-          <div className="preview">
-            <div className="preview__page">
+          <div className="preview" style={{ background: pageBackground }}>
+            <div className="preview__page" style={{ background: cardBackground }}>
               <div className="preview__body">
                 <span className="preview__monogram">L</span>
                 {pageText.districtName.show && (
@@ -135,10 +168,14 @@ export default function App() {
 
                 <div className="sign-in">
                   <h3 className="sign-in__title">Sign in to continue</h3>
-                  <button className="sign-in__option" type="button">
+                  <button className="sign-in__option" type="button" style={{ borderRadius: buttonRadius }}>
                     Sign in with Email
                   </button>
-                  <button className="sign-in__option sign-in__option--guest" type="button">
+                  <button
+                    className="sign-in__option sign-in__option--guest"
+                    type="button"
+                    style={{ borderRadius: buttonRadius }}
+                  >
                     Continue as Guest
                   </button>
                 </div>
@@ -171,11 +208,7 @@ export default function App() {
 
                 {isOpen && (
                   <div className="section__body">
-                    {section === 'Page Text' ? (
-                      <PageTextSection value={pageText} onChange={changePageText} />
-                    ) : (
-                      `${section} settings will go here.`
-                    )}
+                    {panels[section] ?? `${section} settings will go here.`}
                   </div>
                 )}
               </div>

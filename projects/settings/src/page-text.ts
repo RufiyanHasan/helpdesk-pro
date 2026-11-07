@@ -1,3 +1,5 @@
+import { colorToSave, shownColor } from './colors';
+
 export interface TextDefaults {
   text: string;
   color: string;
@@ -21,8 +23,6 @@ export const SUBTEXT_DEFAULTS: TextDefaults = { text: 'Onflo Support Portal', co
 
 export const MAX_TEXT_LENGTH = 100;
 
-const HEX_COLOR = /^#[0-9a-f]{6}$/i;
-
 // Custom values start as the defaults, so switching to Custom begins from what is already shown.
 function initialSetting(defaults: TextDefaults): TextSetting {
   return { show: true, useCustom: false, customText: defaults.text, customColor: defaults.color };
@@ -33,28 +33,17 @@ export const INITIAL_PAGE_TEXT: PageText = {
   subtext: initialSetting(SUBTEXT_DEFAULTS),
 };
 
-// What the preview shows. A colour that is still being typed falls back to the default.
+// What the preview shows.
 export function shownText(setting: TextSetting, defaults: TextDefaults): TextDefaults {
-  if (!setting.useCustom) {
-    return defaults;
-  }
   return {
-    text: setting.customText,
-    color: HEX_COLOR.test(setting.customColor) ? setting.customColor : defaults.color,
+    text: setting.useCustom ? setting.customText : defaults.text,
+    color: shownColor(setting, defaults.color),
   };
-}
-
-function settingToSave(setting: TextSetting, defaults: TextDefaults): TextSetting | null {
-  if (HEX_COLOR.test(setting.customColor)) {
-    return setting;
-  }
-  // The server only accepts full colour codes. An unused custom colour can go back to the default.
-  return setting.useCustom ? null : { ...setting, customColor: defaults.color };
 }
 
 // Returns null when a custom colour is still half-typed.
 export function pageTextToSave(pageText: PageText): PageText | null {
-  const districtName = settingToSave(pageText.districtName, DISTRICT_NAME_DEFAULTS);
-  const subtext = settingToSave(pageText.subtext, SUBTEXT_DEFAULTS);
+  const districtName = colorToSave(pageText.districtName, DISTRICT_NAME_DEFAULTS.color);
+  const subtext = colorToSave(pageText.subtext, SUBTEXT_DEFAULTS.color);
   return districtName && subtext ? { districtName, subtext } : null;
 }

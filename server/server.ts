@@ -31,6 +31,7 @@ const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 const MAX_PAGE_TEXT_LENGTH = 100;
+const BUTTON_CORNERS = ['rounded', 'square'];
 
 function text(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
@@ -54,6 +55,36 @@ function textSetting(value: unknown) {
     }
     return { show, useCustom, customText, customColor };
 }
+
+function colorSetting(value: unknown) {
+    if (typeof value !== 'object' || value === null) {
+        return null;
+    }
+    const { useCustom, customColor } = value as Record<string, unknown>;
+    if (typeof useCustom !== 'boolean' || typeof customColor !== 'string' || !HEX_COLOR.test(customColor)) {
+        return null;
+    }
+    return { useCustom, customColor };
+}
+
+// Each vanity page section, with a function that checks what the browser sends and returns only the
+// fields to save, or null if anything is invalid.
+const VANITY_SECTIONS: Record<string, (body: Record<string, unknown>) => object | null> = {
+    'page-text': (body) => {
+        const districtName = textSetting(body.districtName);
+        const subtext = textSetting(body.subtext);
+        return districtName && subtext ? { districtName, subtext } : null;
+    },
+    'page-appearance': (body) => {
+        const pageBackground = colorSetting(body.pageBackground);
+        const cardBackground = colorSetting(body.cardBackground);
+        const { buttonCorners } = body;
+        if (!pageBackground || !cardBackground || typeof buttonCorners !== 'string' || !BUTTON_CORNERS.includes(buttonCorners)) {
+            return null;
+        }
+        return { pageBackground, cardBackground, buttonCorners };
+    },
+};
 
 function nextTicketId(): string {
     const { last_number } = db.prepare(
@@ -163,32 +194,38 @@ app.get('/api/tickets/:id', (req,res)=>{
 
 app.use('/api/vanity-page', requireAuth);
 
-app.get('/api/vanity-page/page-text', (req,res)=>{
+app.use('/api/vanity-page/:section', (req,res,next)=>{
+    if (!Object.hasOwn(VANITY_SECTIONS, req.params.section)) {
+        res.status(404).json({ error: 'Unknown section' });
+        return;
+    }
+    next();
+})
+
+app.get('/api/vanity-page/:section', (req,res)=>{
     const row = db.prepare(`
-        SELECT settings FROM vanity_page_sections WHERE user_id = ? AND section = 'page-text'
-    `).get(res.locals.userId) as { settings: string } | undefined;
+        SELECT settings FROM vanity_page_sections WHERE user_id = ? AND section = ?
+    `).get(res.locals.userId, req.params.section) as { settings: string } | undefined;
 
     // Nothing saved yet, so the page keeps its own defaults.
     res.json(row ? JSON.parse(row.settings) : null);
 })
 
-app.put('/api/vanity-page/page-text', (req,res)=>{
-    const districtName = textSetting(req.body?.districtName);
-    const subtext = textSetting(req.body?.subtext);
+app.put('/api/vanity-page/:section', (req,res)=>{
+    const body = typeof req.body === 'object' && req.body !== null ? req.body : {};
+    const settings = VANITY_SECTIONS[req.params.section](body);
 
-    if (!districtName || !subtext) {
-        res.status(400).json({ error: 'Invalid page text' });
+    if (!settings) {
+        res.status(400).json({ error: 'Invalid settings' });
         return;
     }
 
-    const pageText = { districtName, subtext };
-
     db.prepare(`
-        INSERT INTO vanity_page_sections (user_id, section, settings) VALUES (?, 'page-text', ?)
+        INSERT INTO vanity_page_sections (user_id, section, settings) VALUES (?, ?, ?)
         ON CONFLICT (user_id, section) DO UPDATE SET settings = excluded.settings
-    `).run(res.locals.userId, JSON.stringify(pageText));
+    `).run(res.locals.userId, req.params.section, JSON.stringify(settings));
 
-    res.json(pageText);
+    res.json(settings);
 })
 
 app.listen(PORT, () => {

@@ -1,7 +1,4 @@
-import type { PageText } from './page-text';
-
-const API_BASE_URL = 'http://localhost:3000/api';
-const PAGE_TEXT_URL = `${API_BASE_URL}/vanity-page/page-text`;
+const VANITY_PAGE_URL = 'http://localhost:3000/api/vanity-page';
 
 // The login cookie is only sent to the API with credentials: 'include'.
 async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
@@ -12,15 +9,15 @@ async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-// null means the user hasn't saved any Page Text yet.
-export function getPageText(): Promise<PageText | null> {
-  return request<PageText | null>(PAGE_TEXT_URL);
+// null means the user hasn't saved this section yet.
+export function getVanitySection<T>(section: string): Promise<T | null> {
+  return request<T | null>(`${VANITY_PAGE_URL}/${section}`);
 }
 
-export function savePageText(pageText: PageText): Promise<PageText> {
-  return request<PageText>(PAGE_TEXT_URL, {
+export function saveVanitySection<T>(section: string, settings: T): Promise<T> {
+  return request<T>(`${VANITY_PAGE_URL}/${section}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(pageText),
+    body: JSON.stringify(settings),
   });
 }
