@@ -223,17 +223,138 @@
 }
 
 .settings .section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 56px;
-  padding: 0 16px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--background);
+}
+
+.settings .section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 56px;
+  padding: 0 16px;
+  border: 0;
+  background: none;
   color: var(--text);
   font: inherit;
   font-size: 15px;
   text-align: left;
   cursor: pointer;
+}
+
+.settings .section__header .icon {
+  transition: transform 0.2s;
+}
+
+.settings .section--open .section__header .icon {
+  transform: rotate(180deg);
+}
+
+.settings .section__body {
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.settings .section--open .section__header {
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.settings .page-text {
+  color: var(--text);
+}
+
+.settings .text-group + .text-group {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.settings .choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.settings .choice input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.settings .choice-row {
+  display: flex;
+  gap: 28px;
+  margin: 14px 0 18px;
+}
+
+.settings .field-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settings .text-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.settings .text-input:disabled {
+  background: var(--background);
+  color: var(--text-muted);
+}
+
+.settings .color-label {
+  display: block;
+  margin: 14px 0 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.settings .color-row {
+  display: flex;
+  gap: 8px;
+}
+
+.settings .color-swatch {
+  flex: none;
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  cursor: pointer;
+}
+
+.settings .color-swatch:disabled {
+  cursor: default;
+}
+
+.settings .text-group__fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.settings .text-group__fields:disabled {
+  opacity: 0.5;
 }

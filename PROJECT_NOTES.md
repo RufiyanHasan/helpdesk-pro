@@ -318,7 +318,11 @@ Checked by hand: the React page shows in the shell, its button works, and leavin
 
 ## 28. Vanity Page Configuration design
 
-The React Settings page now shows the Vanity Page Configuration layout, in `App.tsx`, `icons.tsx` and `settings.css`. It is only the design so far: the buttons, tabs and side sections don't do anything yet, and the preview text is fixed. Colours come from the shell's CSS variables.
+The React Settings page now shows the Vanity Page Configuration layout, in `App.tsx`, `icons.tsx` and `settings.css`. Colours come from the shell's CSS variables.
+
+- The side sections open and close, one at a time.
+- Page Text works (`PagetextSection.tsx`, `page-text.ts`). For the district name and the subtext, you can hide the text, or choose Custom and change the text and colour. The preview updates as you type. The settings live in `App`'s state, so they are lost on refresh until Save works.
+- Save, Publish, the view tabs, Full Screen Preview and the other sections don't do anything yet.
 
 Problems met so far:
 

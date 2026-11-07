@@ -1,4 +1,7 @@
 import { CheckCircleIcon, ChevronDownIcon, DesktopIcon, FullScreenIcon, MobileIcon } from './icons';
+import { useState } from 'react';
+import { DISTRICT_NAME_DEFAULTS, INITIAL_PAGE_TEXT, shownText, SUBTEXT_DEFAULTS } from './page-text';
+import PageTextSection from './PagetextSection';
 
 const SECTIONS = [
   'URL Configuration',
@@ -12,6 +15,12 @@ const SECTIONS = [
 ];
 
 export default function App() {
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [pageText, setPageText] = useState(INITIAL_PAGE_TEXT);
+
+  const districtName = shownText(pageText.districtName, DISTRICT_NAME_DEFAULTS);
+  const subtext = shownText(pageText.subtext, SUBTEXT_DEFAULTS);
+
   return (
     <div className="settings">
       <header className="page-header">
@@ -48,8 +57,16 @@ export default function App() {
             <div className="preview__page">
               <div className="preview__body">
                 <span className="preview__monogram">L</span>
-                <h2 className="preview__name">Laguna Beach School District</h2>
-                <p className="preview__portal">Onflo Support Portal</p>
+                {pageText.districtName.show && (
+                  <h2 className="preview__name" style={{ color: districtName.color }}>
+                    {districtName.text}
+                  </h2>
+                )}
+                {pageText.subtext.show && (
+                  <p className="preview__portal" style={{ color: subtext.color }}>
+                    {subtext.text}
+                  </p>
+                )}
 
                 <div className="sign-in">
                   <h3 className="sign-in__title">Sign in to continue</h3>
@@ -73,12 +90,32 @@ export default function App() {
         </section>
 
         <aside className="sections">
-          {SECTIONS.map((section) => (
-            <button className="section" type="button" aria-expanded={false} key={section}>
-              {section}
-              <ChevronDownIcon />
-            </button>
-          ))}
+          {SECTIONS.map((section) => {
+            const isOpen = openSection === section;
+            return (
+              <div className={isOpen ? 'section section--open' : 'section'} key={section}>
+                <button
+                  className="section__header"
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => setOpenSection(isOpen ? null : section)}
+                >
+                  {section}
+                  <ChevronDownIcon />
+                </button>
+
+                {isOpen && (
+                  <div className="section__body">
+                    {section === 'Page Text' ? (
+                      <PageTextSection value={pageText} onChange={setPageText} />
+                    ) : (
+                      `${section} settings will go here.`
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </aside>
       </div>
     </div>
