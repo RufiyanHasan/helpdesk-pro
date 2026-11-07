@@ -312,7 +312,7 @@ The Settings page now comes from a React app in `projects/settings`, built with 
 
 To run it, open two terminals in `projects/settings`: `npm run watch` rebuilds on save, and `npm run preview` serves the build to the shell. Refresh the browser to see a change. `watch` skips type checking, so run `npm run build` before committing.
 
-Styles go in `src/settings.css`, with every rule starting `.settings`. `mount.tsx` imports the file with `?inline`, adds it to the page when mounting and removes it when unmounting. A normal `import './x.css'` would not load in the shell. Use `@import` inside `settings.css` to split styles into more files.
+Styles go in `src/styles/settings.css`, with every rule starting `.settings`. `mount.tsx` imports the file with `?inline`, adds it to the page when mounting and removes it when unmounting. A normal `import './x.css'` would not load in the shell. Use `@import` inside `settings.css` to split styles into more files.
 
 Checked by hand: the React page shows in the shell, its button works, and leaving and returning mounts it again from a fresh state. With the React server stopped, Settings shows the error message and Tickets still works.
 
@@ -321,13 +321,29 @@ Checked by hand: the React page shows in the shell, its button works, and leavin
 The React Settings page now shows the Vanity Page Configuration layout, in `App.tsx`, `icons.tsx` and `settings.css`. Colours come from the shell's CSS variables.
 
 - The side sections open and close, one at a time.
-- Page Text works (`PagetextSection.tsx`, `page-text.ts`). For the district name and the subtext, you can hide the text, or choose Custom and change the text and colour. The preview updates as you type. The settings live in `App`'s state, so they are lost on refresh until Save works.
+- Page Text works (`PageTextSection.tsx`, `page-text.ts`). For the district name and the subtext, you can hide the text, or choose Custom and change the text and colour. The preview updates as you type. The settings live in `App`'s state, so they are lost on refresh until Save works.
 - Backend: each user has their own vanity page. The `vanity_page_sections` table in `db.ts` has one row per user and section, with the settings as JSON. `requireAuth` now also puts the logged-in user's ID in `res.locals.userId`. `GET /api/vanity-page/page-text` returns that user's saved Page Text, or `null` if they haven't saved any. `PUT` saves it after checking every field, so a half-typed colour or text over 100 characters is rejected. Both need a login.
-- Frontend: `src/api.ts` in the React app calls both routes with `fetch` and `credentials: 'include'`, so the login cookie is sent. The page loads the user's saved Page Text when it opens, and Save sends it. Save is disabled until loading succeeds, so a failed load can't overwrite saved settings with the defaults. A half-typed custom colour stops the save with a message. Running React on its own at `localhost:5173` can't call the API, because the server only allows ports 4200 and 4201.
+- Frontend: `src/api/vanity-page.ts` in the React app calls both routes with `fetch` and `credentials: 'include'`, so the login cookie is sent. The page loads the user's saved Page Text when it opens, and Save sends it. Save is disabled until loading succeeds, so a failed load can't overwrite saved settings with the defaults. A half-typed custom colour stops the save with a message. Running React on its own at `localhost:5173` can't call the API, because the server only allows ports 4200 and 4201.
 - Page Appearance works the same way (`PageAppearanceSection.tsx`, `page-appearance.ts`): page background colour, card background colour, and rounded or square button corners. The monogram belongs to the Monogram & Logo section, which will also have logo upload.
 - Monogram & Logo UI (`MonogramLogoSection.tsx`, `monogram-logo.ts`): choose Monogram or Logo. The monogram has Default letters (the first letter of the district name shown) or up to 2 custom letters, plus background and letter colours. The logo takes a PNG, JPG or SVG of up to 1 MB, with a thumbnail and Remove. The monogram settings are saved as the `monogram-logo` section. The logo file is saved separately in the `vanity_page_logos` table (one per user, as bytes) through `GET`, `PUT` and `DELETE /api/vanity-page/logo`. These routes sit before the `:section` routes. Uploading checks the type and size again, and also checks the file's first bytes, so a renamed file is rejected. The logo is served with a sandboxing Content Security Policy, so scripts inside an SVG can't run. A chosen or removed logo is only sent when Save is clicked.
 - Sign-in Block UI (`SignInBlockSection.tsx`, `sign-in-block.ts`) controls the white sign-in card: show or hide the heading, Default or Custom heading text and colour, card background colour, card border on or off, and rounded or square corners. It is saved per user as the `sign-in-block` section. The buttons inside the card belong to other sections: Google SSO goes in SSO Sign In Options (shown or hidden), and Sign in with Email and Continue as Guest go in Alternate Sign-in Options.
-- Shared pieces: `colors.ts` has the colour checks, `ColorField.tsx` is the colour picker plus hex field, `ColorGroup.tsx` is a colour with a Default or Custom choice, `TextGroup.tsx` is text that can be hidden with Default or Custom wording and colour, and `CORNER_OPTIONS` in `page-appearance.ts` is the Rounded or Square choice.
+- Alternate Sign-in Options (`AlternateSignInSection.tsx`, `alternate-sign-in.ts`): show or hide "Sign in with Email" and "Continue as Guest", each with Default or Custom button text and colour. Saved as `alternate-sign-in`.
+- Footer (`FooterSection.tsx`, `footer.ts`): show or hide the copyright line, with Default or Custom text and colour. The default text follows the district name and the current year. You can also show or hide "Powered by onflo" and set the footer background colour. If both are hidden, the footer disappears. Saved as `footer`.
+- URL Configuration (`UrlConfigurationSection.tsx`, `url-configuration.ts`): each user's page address, `VANITY_BASE_URL` plus a slug of 3 to 40 lowercase letters, numbers or hyphens, which is formatted as you type. `https://helpdesk.example.com/` is a placeholder domain. Saved as `url-configuration`. An empty slug means none has been chosen. A unique index in `db.ts` stops two users having the same slug, and the server answers 409, which the page shows as "That page URL is already taken". The preview shows the address above the page.
+- SSO Sign In Options (Google SSO, shown or hidden) is left for later.
+- Shared pieces: `lib/colors.ts` has the colour checks, `lib/text.ts` has the hideable text setting, and `lib/corners.ts` has the Rounded or Square choice. In `components/`, `ColorField.tsx` is the colour picker plus hex field, `ColorGroup.tsx` is a colour with a Default or Custom choice, and `TextGroup.tsx` is text that can be hidden with Default or Custom wording and colour.
+- Folder structure of `projects/settings/src`:
+
+  ```text
+  main.tsx, mount.tsx, App.tsx   entry points (main.tsx runs it alone, mount.tsx in the shell) and the page
+  api/vanity-page.ts             all calls to the server
+  components/                    shared controls: ColorField, ColorGroup, TextGroup, icons
+  lib/                           shared logic with no UI: colors, text, corners
+  sections/<section>/            one folder per settings section: its panel (<Name>Section.tsx) and its settings, defaults and checks (<section>.ts)
+  styles/                        settings.css (loaded by mount.tsx) and index.css (used only when run alone)
+  ```
+
+  Sections only import from `lib/` and `components/`. The one exception is Footer, which reads the default district name from Page Text. The unused Vite starter files (`App.css`, `src/assets/`, `public/icons.svg`) were removed.
 - The server now has one pair of routes for every section: `GET` and `PUT /api/vanity-page/:section`. `VANITY_SECTIONS` in `server.ts` lists the allowed sections, each with its own check. An unknown section returns a 404. A new section only needs an entry there.
 - Save sends every section at once, and the page loads every section when it opens.
 - Publish, the view tabs, Full Screen Preview and the other sections don't do anything yet.

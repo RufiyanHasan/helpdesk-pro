@@ -1,7 +1,7 @@
-import ColorGroup from './ColorGroup';
-import { CORNER_OPTIONS } from './page-appearance';
+import ColorGroup from '../../components/ColorGroup';
+import { CORNER_OPTIONS } from '../../lib/corners';
 import { HEADING_DEFAULTS, SIGN_IN_CARD_DEFAULT, type SignInBlock } from './sign-in-block';
-import TextGroup from './TextGroup';
+import TextGroup from '../../components/TextGroup';
 
 interface SignInBlockSectionProps {
   value: SignInBlock;

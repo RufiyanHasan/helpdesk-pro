@@ -1,11 +1,21 @@
 const VANITY_PAGE_URL = 'http://localhost:3000/api/vanity-page';
 const LOGO_URL = `${VANITY_PAGE_URL}/logo`;
 
+// Keeps the status code, so callers can tell e.g. a taken URL (409) from other failures.
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, statusText: string) {
+    super(`${status} ${statusText}`);
+    this.status = status;
+  }
+}
+
 // The login cookie is only sent to the API with credentials: 'include'.
 async function send(url: string, init: RequestInit = {}): Promise<Response> {
   const response = await fetch(url, { ...init, credentials: 'include' });
   if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
+    throw new ApiError(response.status, response.statusText);
   }
   return response;
 }
@@ -32,7 +42,7 @@ export async function getLogo(): Promise<Blob | null> {
     return null;
   }
   if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
+    throw new ApiError(response.status, response.statusText);
   }
   return response.blob();
 }

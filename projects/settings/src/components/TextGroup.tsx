@@ -1,5 +1,5 @@
 import ColorField from './ColorField';
-import { MAX_TEXT_LENGTH, shownText, type TextDefaults, type TextSetting } from './page-text';
+import { MAX_TEXT_LENGTH, shownText, type TextDefaults, type TextSetting } from '../lib/text';
 
 interface TextGroupProps {
   id: string;

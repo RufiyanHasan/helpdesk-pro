@@ -1,4 +1,4 @@
-import { colorToSave, shownColor, type ColorSetting } from './colors';
+import { colorToSave, shownColor, type ColorSetting } from '../../lib/colors';
 
 export type BrandMark = 'monogram' | 'logo';
 

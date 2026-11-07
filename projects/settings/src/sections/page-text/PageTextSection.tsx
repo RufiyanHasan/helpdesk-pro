@@ -1,5 +1,5 @@
 import { DISTRICT_NAME_DEFAULTS, SUBTEXT_DEFAULTS, type PageText } from './page-text';
-import TextGroup from './TextGroup';
+import TextGroup from '../../components/TextGroup';
 
 interface PageTextSectionProps {
   value: PageText;

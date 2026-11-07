@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import App from './App';
-import styles from './settings.css?inline';
+import styles from './styles/settings.css?inline';
 
 export function mount(element: HTMLElement): () => void {
   const style = document.createElement('style');

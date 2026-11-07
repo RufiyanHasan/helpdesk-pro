@@ -53,6 +53,13 @@ db.exec(`
   )
 `);
 
+// No two users can save the same page URL. An empty slug means no URL has been chosen, so it isn't checked.
+db.exec(`
+  CREATE UNIQUE INDEX IF NOT EXISTS vanity_page_url_slug
+  ON vanity_page_sections (json_extract(settings, '$.slug'))
+  WHERE section = 'url-configuration' AND json_extract(settings, '$.slug') <> ''
+`);
+
 // Each user's uploaded vanity page logo, stored as the file's bytes.
 db.exec(`
   CREATE TABLE IF NOT EXISTS vanity_page_logos (

@@ -1,5 +1,6 @@
-import ColorGroup from './ColorGroup';
-import { CARD_BACKGROUND_DEFAULT, CORNER_OPTIONS, PAGE_BACKGROUND_DEFAULT, type PageAppearance } from './page-appearance';
+import ColorGroup from '../../components/ColorGroup';
+import { CORNER_OPTIONS } from '../../lib/corners';
+import { CARD_BACKGROUND_DEFAULT, PAGE_BACKGROUND_DEFAULT, type PageAppearance } from './page-appearance';
 
 interface PageAppearanceSectionProps {
   value: PageAppearance;

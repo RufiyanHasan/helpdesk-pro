@@ -1,7 +1,24 @@
-import { CheckCircleIcon, ChevronDownIcon, DesktopIcon, FullScreenIcon, MobileIcon } from './icons';
 import { useEffect, useState, type ReactNode } from 'react';
-import { deleteLogo, getLogo, getVanitySection, saveLogo, saveVanitySection } from './api';
-import { shownColor } from './colors';
+import { ApiError, deleteLogo, getLogo, getVanitySection, saveLogo, saveVanitySection } from './api/vanity-page';
+import { CheckCircleIcon, ChevronDownIcon, DesktopIcon, FullScreenIcon, MobileIcon } from './components/icons';
+import { shownColor } from './lib/colors';
+import { shownText } from './lib/text';
+import {
+  alternateSignInToSave,
+  EMAIL_DEFAULTS,
+  GUEST_DEFAULTS,
+  INITIAL_ALTERNATE_SIGN_IN,
+  type AlternateSignIn,
+} from './sections/alternate-sign-in/alternate-sign-in';
+import AlternateSignInSection from './sections/alternate-sign-in/AlternateSignInSection';
+import {
+  copyrightDefaults,
+  FOOTER_BACKGROUND_DEFAULT,
+  footerToSave,
+  INITIAL_FOOTER,
+  type Footer,
+} from './sections/footer/footer';
+import FooterSection from './sections/footer/FooterSection';
 import {
   INITIAL_MONOGRAM_LOGO,
   monogramLogoToSave,
@@ -9,39 +26,47 @@ import {
   shownMonogram,
   type LogoState,
   type MonogramLogo,
-} from './monogram-logo';
-import MonogramLogoSection from './MonogramLogoSection';
+} from './sections/monogram-logo/monogram-logo';
+import MonogramLogoSection from './sections/monogram-logo/MonogramLogoSection';
 import {
   CARD_BACKGROUND_DEFAULT,
   INITIAL_PAGE_APPEARANCE,
   PAGE_BACKGROUND_DEFAULT,
   pageAppearanceToSave,
   type PageAppearance,
-} from './page-appearance';
+} from './sections/page-appearance/page-appearance';
 import {
   DISTRICT_NAME_DEFAULTS,
   INITIAL_PAGE_TEXT,
   pageTextToSave,
-  shownText,
   SUBTEXT_DEFAULTS,
   type PageText,
-} from './page-text';
-import PageAppearanceSection from './PageAppearanceSection';
-import PageTextSection from './PagetextSection';
+} from './sections/page-text/page-text';
+import PageAppearanceSection from './sections/page-appearance/PageAppearanceSection';
+import PageTextSection from './sections/page-text/PageTextSection';
 import {
   HEADING_DEFAULTS,
   INITIAL_SIGN_IN_BLOCK,
   SIGN_IN_CARD_DEFAULT,
   signInBlockToSave,
   type SignInBlock,
-} from './sign-in-block';
-import SignInBlockSection from './SignInBlockSection';
+} from './sections/sign-in-block/sign-in-block';
+import SignInBlockSection from './sections/sign-in-block/SignInBlockSection';
+import {
+  INITIAL_URL_CONFIGURATION,
+  isValidSlug,
+  VANITY_BASE_URL,
+  type UrlConfiguration,
+} from './sections/url-configuration/url-configuration';
+import UrlConfigurationSection from './sections/url-configuration/UrlConfigurationSection';
 
 const SAVE_MESSAGES = {
   idle: '',
   saving: 'Saving...',
   saved: 'Saved',
   invalid: 'Enter a full colour code, like #C02020, before saving.',
+  invalidUrl: 'Fix the page URL before saving.',
+  urlTaken: 'That page URL is already taken. Choose another.',
   failed: 'Could not save. Please try again.',
 };
 
@@ -63,6 +88,9 @@ export default function App() {
   const [monogramLogo, setMonogramLogo] = useState(INITIAL_MONOGRAM_LOGO);
   const [logo, setLogo] = useState<LogoState>(NO_LOGO);
   const [signInBlock, setSignInBlock] = useState(INITIAL_SIGN_IN_BLOCK);
+  const [alternateSignIn, setAlternateSignIn] = useState(INITIAL_ALTERNATE_SIGN_IN);
+  const [footer, setFooter] = useState(INITIAL_FOOTER);
+  const [urlConfiguration, setUrlConfiguration] = useState(INITIAL_URL_CONFIGURATION);
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'failed'>('loading');
   const [saveState, setSaveState] = useState<keyof typeof SAVE_MESSAGES>('idle');
 
@@ -79,6 +107,10 @@ export default function App() {
     border: signInBlock.showBorder ? undefined : 'none',
     borderRadius: signInBlock.corners === 'square' ? 0 : undefined,
   };
+  const emailButton = shownText(alternateSignIn.email, EMAIL_DEFAULTS);
+  const guestButton = shownText(alternateSignIn.guest, GUEST_DEFAULTS);
+  const copyright = shownText(footer.copyright, copyrightDefaults(districtName.text));
+  const footerBackground = shownColor(footer.background, FOOTER_BACKGROUND_DEFAULT);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,8 +120,21 @@ export default function App() {
       getVanitySection<MonogramLogo>('monogram-logo'),
       getLogo(),
       getVanitySection<SignInBlock>('sign-in-block'),
+      getVanitySection<AlternateSignIn>('alternate-sign-in'),
+      getVanitySection<Footer>('footer'),
+      getVanitySection<UrlConfiguration>('url-configuration'),
     ])
-      .then(([savedText, savedAppearance, savedMonogram, savedLogo, savedSignInBlock]) => {
+      .then(
+        ([
+          savedText,
+          savedAppearance,
+          savedMonogram,
+          savedLogo,
+          savedSignInBlock,
+          savedAlternateSignIn,
+          savedFooter,
+          savedUrlConfiguration,
+        ]) => {
         if (cancelled) {
           return;
         }
@@ -108,8 +153,18 @@ export default function App() {
         if (savedSignInBlock) {
           setSignInBlock(savedSignInBlock);
         }
+        if (savedAlternateSignIn) {
+          setAlternateSignIn(savedAlternateSignIn);
+        }
+        if (savedFooter) {
+          setFooter(savedFooter);
+        }
+        if (savedUrlConfiguration) {
+          setUrlConfiguration(savedUrlConfiguration);
+        }
         setLoadState('loaded');
-      })
+        },
+      )
       .catch(() => {
         if (!cancelled) {
           setLoadState('failed');
@@ -145,6 +200,21 @@ export default function App() {
     setSaveState('idle');
   }
 
+  function changeAlternateSignIn(value: AlternateSignIn): void {
+    setAlternateSignIn(value);
+    setSaveState('idle');
+  }
+
+  function changeFooter(value: Footer): void {
+    setFooter(value);
+    setSaveState('idle');
+  }
+
+  function changeUrlConfiguration(value: UrlConfiguration): void {
+    setUrlConfiguration(value);
+    setSaveState('idle');
+  }
+
   // Uploads a newly chosen logo, or deletes a removed one. An unchanged logo isn't sent again.
   function saveLogoChange(value: LogoState): Promise<void> | null {
     if (!value.changed) {
@@ -158,8 +228,21 @@ export default function App() {
     const appearanceToSave = pageAppearanceToSave(pageAppearance);
     const monogramToSave = monogramLogoToSave(monogramLogo);
     const signInBlockToSaveNow = signInBlockToSave(signInBlock);
-    if (!textToSave || !appearanceToSave || !monogramToSave || !signInBlockToSaveNow) {
+    const alternateSignInToSaveNow = alternateSignInToSave(alternateSignIn);
+    const footerToSaveNow = footerToSave(footer);
+    if (
+      !textToSave ||
+      !appearanceToSave ||
+      !monogramToSave ||
+      !signInBlockToSaveNow ||
+      !alternateSignInToSaveNow ||
+      !footerToSaveNow
+    ) {
       setSaveState('invalid');
+      return;
+    }
+    if (!isValidSlug(urlConfiguration.slug)) {
+      setSaveState('invalidUrl');
       return;
     }
     const logoToSave = logo;
@@ -171,12 +254,16 @@ export default function App() {
         saveVanitySection('monogram-logo', monogramToSave),
         saveLogoChange(logoToSave),
         saveVanitySection('sign-in-block', signInBlockToSaveNow),
+        saveVanitySection('alternate-sign-in', alternateSignInToSaveNow),
+        saveVanitySection('footer', footerToSaveNow),
+        saveVanitySection('url-configuration', urlConfiguration),
       ]);
       // A logo chosen while saving is still waiting to be uploaded, so it stays marked as changed.
       setLogo((current) => (current === logoToSave ? { ...current, file: null, changed: false } : current));
       setSaveState('saved');
-    } catch {
-      setSaveState('failed');
+    } catch (error) {
+      // The other sections may still have saved. Only the URL needs choosing again.
+      setSaveState(error instanceof ApiError && error.status === 409 ? 'urlTaken' : 'failed');
     }
   }
 
@@ -185,6 +272,7 @@ export default function App() {
   const statusMessage = loadState === 'failed' ? 'Could not load your saved settings.' : SAVE_MESSAGES[saveState];
 
   const panels: Record<string, ReactNode> = {
+    'URL Configuration': <UrlConfigurationSection value={urlConfiguration} onChange={changeUrlConfiguration} />,
     'Page Appearance': <PageAppearanceSection value={pageAppearance} onChange={changePageAppearance} />,
     'Monogram & Logo': (
       <MonogramLogoSection
@@ -197,6 +285,8 @@ export default function App() {
     ),
     'Page Text': <PageTextSection value={pageText} onChange={changePageText} />,
     'Sign-in Block': <SignInBlockSection value={signInBlock} onChange={changeSignInBlock} />,
+    'Alternate Sign-in Options': <AlternateSignInSection value={alternateSignIn} onChange={changeAlternateSignIn} />,
+    Footer: <FooterSection value={footer} districtName={districtName.text} onChange={changeFooter} />,
   };
 
   return (
@@ -233,6 +323,12 @@ export default function App() {
           </div>
 
           <div className="preview" style={{ background: pageBackground }}>
+            {urlConfiguration.slug && isValidSlug(urlConfiguration.slug) && (
+              <p className="preview__address">
+                {VANITY_BASE_URL}
+                {urlConfiguration.slug}
+              </p>
+            )}
             <div className="preview__page" style={{ background: cardBackground }}>
               <div className="preview__body">
                 {showLogo ? (
@@ -259,25 +355,37 @@ export default function App() {
                       {signInHeading.text}
                     </h3>
                   )}
-                  <button className="sign-in__option" type="button" style={{ borderRadius: buttonRadius }}>
-                    Sign in with Email
-                  </button>
-                  <button
-                    className="sign-in__option sign-in__option--guest"
-                    type="button"
-                    style={{ borderRadius: buttonRadius }}
-                  >
-                    Continue as Guest
-                  </button>
+                  {alternateSignIn.email.show && (
+                    <button
+                      className="sign-in__option"
+                      type="button"
+                      style={{ borderRadius: buttonRadius, color: emailButton.color }}
+                    >
+                      {emailButton.text}
+                    </button>
+                  )}
+                  {alternateSignIn.guest.show && (
+                    <button
+                      className="sign-in__option sign-in__option--guest"
+                      type="button"
+                      style={{ borderRadius: buttonRadius, color: guestButton.color }}
+                    >
+                      {guestButton.text}
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <footer className="preview__footer">
-                <span>© 2026 Laguna Beach School District. All rights reserved.</span>
-                <span>
-                  Powered by <strong className="preview__brand">onflo</strong>
-                </span>
-              </footer>
+              {(footer.copyright.show || footer.showPoweredBy) && (
+                <footer className="preview__footer" style={{ background: footerBackground }}>
+                  {footer.copyright.show && <span style={{ color: copyright.color }}>{copyright.text}</span>}
+                  {footer.showPoweredBy && (
+                    <span className="preview__powered">
+                      Powered by <strong className="preview__brand">onflo</strong>
+                    </span>
+                  )}
+                </footer>
+              )}
             </div>
           </div>
         </section>

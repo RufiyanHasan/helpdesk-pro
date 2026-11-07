@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from 'react';
-import ColorGroup from './ColorGroup';
+import ColorGroup from '../../components/ColorGroup';
 import {
   defaultLetters,
   LOGO_TYPES,

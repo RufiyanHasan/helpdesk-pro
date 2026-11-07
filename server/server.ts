@@ -37,6 +37,8 @@ const MAX_MONOGRAM_LETTERS = 2;
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml'];
 const MAX_LOGO_BYTES = 1024 * 1024;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+// 3 to 40 lowercase letters, numbers or hyphens, not starting or ending with a hyphen.
+const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
 
 // Checks the file's contents really match its type, instead of trusting the header the browser sent.
 function isLogoFile(type: string, data: Buffer): boolean {
@@ -134,6 +136,27 @@ const VANITY_SECTIONS: Record<string, (body: Record<string, unknown>) => object 
             return null;
         }
         return { heading, cardBackground, showBorder, corners };
+    },
+    'alternate-sign-in': (body) => {
+        const email = textSetting(body.email);
+        const guest = textSetting(body.guest);
+        return email && guest ? { email, guest } : null;
+    },
+    'footer': (body) => {
+        const copyright = textSetting(body.copyright);
+        const background = colorSetting(body.background);
+        const { showPoweredBy } = body;
+        if (!copyright || !background || typeof showPoweredBy !== 'boolean') {
+            return null;
+        }
+        return { copyright, showPoweredBy, background };
+    },
+    'url-configuration': (body) => {
+        const { slug } = body;
+        if (typeof slug !== 'string' || (slug !== '' && !SLUG_PATTERN.test(slug))) {
+            return null;
+        }
+        return { slug };
     },
 };
 
@@ -322,10 +345,19 @@ app.put('/api/vanity-page/:section', (req,res)=>{
         return;
     }
 
-    db.prepare(`
-        INSERT INTO vanity_page_sections (user_id, section, settings) VALUES (?, ?, ?)
-        ON CONFLICT (user_id, section) DO UPDATE SET settings = excluded.settings
-    `).run(res.locals.userId, req.params.section, JSON.stringify(settings));
+    try {
+        db.prepare(`
+            INSERT INTO vanity_page_sections (user_id, section, settings) VALUES (?, ?, ?)
+            ON CONFLICT (user_id, section) DO UPDATE SET settings = excluded.settings
+        `).run(res.locals.userId, req.params.section, JSON.stringify(settings));
+    } catch (error) {
+        // The unique index on page URLs rejects a URL another user already has.
+        if (error instanceof Error && error.message.includes('vanity_page_url_slug')) {
+            res.status(409).json({ error: 'That page URL is already taken' });
+            return;
+        }
+        throw error;
+    }
 
     res.json(settings);
 })

@@ -1,5 +1,5 @@
 import ColorField from './ColorField';
-import { shownColor, type ColorSetting } from './colors';
+import { shownColor, type ColorSetting } from '../lib/colors';
 
 interface ColorGroupProps {
   id: string;
