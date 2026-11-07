@@ -120,6 +120,21 @@ const VANITY_SECTIONS: Record<string, (body: Record<string, unknown>) => object 
         }
         return { show, useCustomLetters, customLetters, background, letterColor };
     },
+    'sign-in-block': (body) => {
+        const heading = textSetting(body.heading);
+        const cardBackground = colorSetting(body.cardBackground);
+        const { showBorder, corners } = body;
+        if (
+            !heading ||
+            !cardBackground ||
+            typeof showBorder !== 'boolean' ||
+            typeof corners !== 'string' ||
+            !BUTTON_CORNERS.includes(corners)
+        ) {
+            return null;
+        }
+        return { heading, cardBackground, showBorder, corners };
+    },
 };
 
 function nextTicketId(): string {

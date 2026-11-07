@@ -28,6 +28,14 @@ import {
 } from './page-text';
 import PageAppearanceSection from './PageAppearanceSection';
 import PageTextSection from './PagetextSection';
+import {
+  HEADING_DEFAULTS,
+  INITIAL_SIGN_IN_BLOCK,
+  SIGN_IN_CARD_DEFAULT,
+  signInBlockToSave,
+  type SignInBlock,
+} from './sign-in-block';
+import SignInBlockSection from './SignInBlockSection';
 
 const SAVE_MESSAGES = {
   idle: '',
@@ -54,6 +62,7 @@ export default function App() {
   const [pageAppearance, setPageAppearance] = useState(INITIAL_PAGE_APPEARANCE);
   const [monogramLogo, setMonogramLogo] = useState(INITIAL_MONOGRAM_LOGO);
   const [logo, setLogo] = useState<LogoState>(NO_LOGO);
+  const [signInBlock, setSignInBlock] = useState(INITIAL_SIGN_IN_BLOCK);
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'failed'>('loading');
   const [saveState, setSaveState] = useState<keyof typeof SAVE_MESSAGES>('idle');
 
@@ -64,6 +73,12 @@ export default function App() {
   const buttonRadius = pageAppearance.buttonCorners === 'square' ? 0 : undefined;
   const monogram = shownMonogram(monogramLogo, districtName.text);
   const showLogo = monogramLogo.show === 'logo' && logo.url !== null;
+  const signInHeading = shownText(signInBlock.heading, HEADING_DEFAULTS);
+  const signInCardStyle = {
+    background: shownColor(signInBlock.cardBackground, SIGN_IN_CARD_DEFAULT),
+    border: signInBlock.showBorder ? undefined : 'none',
+    borderRadius: signInBlock.corners === 'square' ? 0 : undefined,
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -72,8 +87,9 @@ export default function App() {
       getVanitySection<PageAppearance>('page-appearance'),
       getVanitySection<MonogramLogo>('monogram-logo'),
       getLogo(),
+      getVanitySection<SignInBlock>('sign-in-block'),
     ])
-      .then(([savedText, savedAppearance, savedMonogram, savedLogo]) => {
+      .then(([savedText, savedAppearance, savedMonogram, savedLogo, savedSignInBlock]) => {
         if (cancelled) {
           return;
         }
@@ -88,6 +104,9 @@ export default function App() {
         }
         if (savedLogo) {
           setLogo({ url: URL.createObjectURL(savedLogo), file: null, changed: false });
+        }
+        if (savedSignInBlock) {
+          setSignInBlock(savedSignInBlock);
         }
         setLoadState('loaded');
       })
@@ -121,6 +140,11 @@ export default function App() {
     setSaveState('idle');
   }
 
+  function changeSignInBlock(value: SignInBlock): void {
+    setSignInBlock(value);
+    setSaveState('idle');
+  }
+
   // Uploads a newly chosen logo, or deletes a removed one. An unchanged logo isn't sent again.
   function saveLogoChange(value: LogoState): Promise<void> | null {
     if (!value.changed) {
@@ -133,7 +157,8 @@ export default function App() {
     const textToSave = pageTextToSave(pageText);
     const appearanceToSave = pageAppearanceToSave(pageAppearance);
     const monogramToSave = monogramLogoToSave(monogramLogo);
-    if (!textToSave || !appearanceToSave || !monogramToSave) {
+    const signInBlockToSaveNow = signInBlockToSave(signInBlock);
+    if (!textToSave || !appearanceToSave || !monogramToSave || !signInBlockToSaveNow) {
       setSaveState('invalid');
       return;
     }
@@ -145,6 +170,7 @@ export default function App() {
         saveVanitySection('page-appearance', appearanceToSave),
         saveVanitySection('monogram-logo', monogramToSave),
         saveLogoChange(logoToSave),
+        saveVanitySection('sign-in-block', signInBlockToSaveNow),
       ]);
       // A logo chosen while saving is still waiting to be uploaded, so it stays marked as changed.
       setLogo((current) => (current === logoToSave ? { ...current, file: null, changed: false } : current));
@@ -170,6 +196,7 @@ export default function App() {
       />
     ),
     'Page Text': <PageTextSection value={pageText} onChange={changePageText} />,
+    'Sign-in Block': <SignInBlockSection value={signInBlock} onChange={changeSignInBlock} />,
   };
 
   return (
@@ -226,8 +253,12 @@ export default function App() {
                   </p>
                 )}
 
-                <div className="sign-in">
-                  <h3 className="sign-in__title">Sign in to continue</h3>
+                <div className="sign-in" style={signInCardStyle}>
+                  {signInBlock.heading.show && (
+                    <h3 className="sign-in__title" style={{ color: signInHeading.color }}>
+                      {signInHeading.text}
+                    </h3>
+                  )}
                   <button className="sign-in__option" type="button" style={{ borderRadius: buttonRadius }}>
                     Sign in with Email
                   </button>

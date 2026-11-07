@@ -2,6 +2,11 @@ import { colorToSave, type ColorSetting } from './colors';
 
 export type ButtonCorners = 'rounded' | 'square';
 
+export const CORNER_OPTIONS: { value: ButtonCorners; label: string }[] = [
+  { value: 'rounded', label: 'Rounded' },
+  { value: 'square', label: 'Square' },
+];
+
 export interface PageAppearance {
   pageBackground: ColorSetting;
   cardBackground: ColorSetting;

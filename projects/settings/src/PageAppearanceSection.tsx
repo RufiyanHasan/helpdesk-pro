@@ -1,15 +1,5 @@
 import ColorGroup from './ColorGroup';
-import {
-  CARD_BACKGROUND_DEFAULT,
-  PAGE_BACKGROUND_DEFAULT,
-  type ButtonCorners,
-  type PageAppearance,
-} from './page-appearance';
-
-const BUTTON_CORNER_OPTIONS: { value: ButtonCorners; label: string }[] = [
-  { value: 'rounded', label: 'Rounded' },
-  { value: 'square', label: 'Square' },
-];
+import { CARD_BACKGROUND_DEFAULT, CORNER_OPTIONS, PAGE_BACKGROUND_DEFAULT, type PageAppearance } from './page-appearance';
 
 interface PageAppearanceSectionProps {
   value: PageAppearance;
@@ -36,7 +26,7 @@ export default function PageAppearanceSection({ value, onChange }: PageAppearanc
       <div className="text-group">
         <span className="field-label">Button corners</span>
         <div className="choice-row">
-          {BUTTON_CORNER_OPTIONS.map((option) => (
+          {CORNER_OPTIONS.map((option) => (
             <label className="choice" key={option.value}>
               <input
                 type="radio"
