@@ -288,7 +288,7 @@ Part 3 is done, in the shell's `src/app/core/`:
 - `auth.guards.ts`: `/dashboard` needs a login, and `/login` sends logged-in users to the dashboard. Both ask `GET /api/me`.
 - The token is in an `HttpOnly`, `SameSite=Strict` cookie, which JavaScript cannot read. It is also `Secure` when `NODE_ENV` is `production`. Browsers treat `localhost` on any port as the same site, but production domains must also be same-site, or these settings need changing.
 - The tickets remote's `Api` service also sends the cookie, so it works on its own at `localhost:4201` once you have logged in through the shell.
-- `login.ts` calls the API, and the hardcoded credentials and the `console.log` of the password are gone. `dashboard.html` has a "Log out" button.
+- `login.ts` calls the API, and the hardcoded credentials and the `console.log` of the password are gone. Both fields are required: submitting with an empty field shows "Username is required." or "Password is required." and sends nothing to the server. `dashboard.html` has a "Log out" button.
 
 Known limits: the sidebar's name "Alex Morgan" is still hardcoded. A malicious script cannot read the cookie, but it could still send requests while the page is open, so preventing XSS still matters, especially once ticket descriptions are displayed.
 

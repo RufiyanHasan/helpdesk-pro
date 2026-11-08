@@ -1,9 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import {FormGroup, FormControl, ReactiveFormsModule} from '@angular/forms';
+import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Auth } from '../../core/auth';
-
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -12,31 +11,37 @@ import { Auth } from '../../core/auth';
   templateUrl: './login.html',
 })
 export class Login {
-  private auth = inject(Auth);
-  private router = inject(Router);
+  private readonly auth = inject(Auth);
+  private readonly formBuilder = inject(NonNullableFormBuilder);
+  private readonly router = inject(Router);
 
-  form = new FormGroup({
-    username: new FormControl(''),
-    password: new FormControl('')
-  })
+  protected readonly form = this.formBuilder.group({
+    username: ['', Validators.required],
+    password: ['', Validators.required],
+  });
 
-  loginError = signal('');
-  isSubmitting = signal(false);
+  protected readonly loginError = signal('');
 
-  onSubmit(){
-    const { username, password } = this.form.value;
+  protected readonly isSubmitting = signal(false);
+
+  protected onSubmit(): void {
+    // Shows the "is required" messages instead of sending empty fields to the server.
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const { username, password } = this.form.getRawValue();
 
     this.isSubmitting.set(true);
     this.loginError.set('');
 
-    this.auth.login(username ?? '', password ?? '').subscribe({
+    this.auth.login(username, password).subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: (error: HttpErrorResponse) => {
         this.isSubmitting.set(false);
         this.loginError.set(
-          error.status === 401
-            ? 'Invalid username or password.'
-            : 'Could not sign in. Please try again.',
+          error.status === 401 ? 'Invalid username or password.' : 'Could not sign in. Please try again.',
         );
       },
     });
