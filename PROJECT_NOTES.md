@@ -292,7 +292,7 @@ Part 3 is done, in the shell's `src/app/core/`:
 - The tickets remote's `Api` service also sends the cookie, so it works on its own at `localhost:4201` once you have logged in through the shell.
 - `login.ts` calls the API, and the hardcoded credentials and the `console.log` of the password are gone. Both fields are required: submitting with an empty field shows "Username is required." or "Password is required." and sends nothing to the server. `dashboard.html` has a "Log out" button.
 
-Known limits: the sidebar's name "Alex Morgan" is still hardcoded. A malicious script cannot read the cookie, but it could still send requests while the page is open, so preventing XSS still matters, especially once ticket descriptions are displayed.
+Known limits: the sidebar's name "Alex Morgan" is still hardcoded (fixed later, see section 31). A malicious script cannot read the cookie, but it could still send requests while the page is open, so preventing XSS still matters, especially once ticket descriptions are displayed.
 
 ## 26. Ticket details page
 
@@ -383,6 +383,11 @@ server/
 - Step 2: `users` has an `email` column, with a unique index so two users can't share an email. `database.ts` adds it to older databases. `npm run create-admin` also reads `ADMIN_EMAIL` and saves it in lowercase. A blank `ADMIN_PASSWORD` keeps the existing password, so the email can be set on its own. Both changes are saved together, so a taken email changes nothing and prints "Another user already has the email ...".
 - Step 3: `POST /api/login/google` in `auth.routes.ts` uses `google-auth-library`. It checks the ID token's Google signature, expiry and audience (`GOOGLE_CLIENT_ID` in `server/.env`), and that Google has verified the email. It then finds the user by email and returns the same `{ token, username }` as password login. Unknown emails, and invalid or faked tokens, all get the same 401, so the route doesn't reveal which emails have accounts. Google accounts can't create new users.
 - Step 4: `src/app/core/google-sign-in.ts` loads Google's script once. The Client ID is only in `server/.env`. The login page gets it from `GET /api/login/google/config`, which needs no login and returns `{ clientId }`, or 404 if it isn't set. It isn't secret, but this way there is one copy and none in the frontend code. If the config request fails, the page shows "Google sign-in is unavailable right now." and password login still works. The login page asks Google to draw its own "Continue with Google" button into a `<div>`, because this method doesn't allow a custom button. `Auth.loginWithGoogle()` sends the ID token and saves our token like a password login. Errors show under the button.
+
+## 31. Username in the sidebar, and a favicon
+
+- The sidebar shows the logged-in username and its initials instead of "Alex Morgan". `Auth` keeps the name in a read-only `username` signal. It is set on password or Google login, set by `isLoggedIn()` from `/api/me` when a page loads, and cleared on log out, so the sidebar needs no extra request. Initials take the first letter of the first two words (`priya.sharma` becomes "PS"), or the first two letters of a single word (`admin` becomes "AD"). Long names end in "…". The "Admin" role under the name is still hardcoded, because users have no roles yet.
+- New favicon in `public/`: a blue rounded square with a white speech bubble and a tick. `favicon.svg` is the main icon. `favicon.png` (32 × 32) is for browsers without SVG icons, and `apple-touch-icon.png` (180 × 180, square corners) is for iPhone home screens. The PNGs were rendered from the SVG in headless Chrome. The old Angular `favicon.ico` was removed.
 
 Problems met so far:
 

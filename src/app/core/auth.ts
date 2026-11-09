@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { API_URLS } from './api-urls';
 
@@ -16,6 +16,11 @@ interface LoginResponse {
 export class Auth {
   private readonly http = inject(HttpClient);
 
+  private readonly currentUsername = signal('');
+
+  // The logged-in user's name, set when they log in or when a page load checks their token.
+  readonly username = this.currentUsername.asReadonly();
+
   token(): string | null {
     return localStorage.getItem(TOKEN_KEY);
   }
@@ -23,7 +28,7 @@ export class Auth {
   login(username: string, password: string): Observable<LoginResponse> {
     return this.http
       .post<LoginResponse>(API_URLS.login, { username, password })
-      .pipe(tap(({ token }) => localStorage.setItem(TOKEN_KEY, token)));
+      .pipe(tap((response) => this.saveLogin(response)));
   }
 
   // The Client ID lives only in server/.env, so the login page asks the server for it.
@@ -37,12 +42,13 @@ export class Auth {
   loginWithGoogle(credential: string): Observable<LoginResponse> {
     return this.http
       .post<LoginResponse>(API_URLS.googleLogin, { credential })
-      .pipe(tap(({ token }) => localStorage.setItem(TOKEN_KEY, token)));
+      .pipe(tap((response) => this.saveLogin(response)));
   }
 
   // The server keeps no session, so logging out only needs the token removed.
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
+    this.currentUsername.set('');
   }
 
   // Asks the server, because a stored token may have expired or been changed.
@@ -50,12 +56,20 @@ export class Auth {
     if (!this.token()) {
       return of(false);
     }
-    return this.http.get(API_URLS.me).pipe(
-      map(() => true),
+    return this.http.get<{ username: string }>(API_URLS.me).pipe(
+      map(({ username }) => {
+        this.currentUsername.set(username);
+        return true;
+      }),
       catchError(() => {
         this.logout();
         return of(false);
       }),
     );
+  }
+
+  private saveLogin({ token, username }: LoginResponse): void {
+    localStorage.setItem(TOKEN_KEY, token);
+    this.currentUsername.set(username);
   }
 }

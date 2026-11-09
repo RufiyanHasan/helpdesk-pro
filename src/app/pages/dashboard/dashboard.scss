@@ -73,6 +73,7 @@
 
   &__avatar {
     display: flex;
+    flex: none;
     align-items: center;
     justify-content: center;
     width: 32px;
@@ -83,9 +84,17 @@
     font-weight: 600;
   }
 
+  // Lets a long username shorten with "…" instead of pushing "Log out" out of the sidebar.
+  &__user-details {
+    min-width: 0;
+  }
+
   &__user-name {
+    overflow: hidden;
     font-size: 14px;
     font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__user-role {
