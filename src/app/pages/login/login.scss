@@ -90,6 +90,13 @@
   }
 }
 
+// Google draws its own button inside. The height stops the page jumping while it loads.
+.google-button {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
 .divider {
   display: flex;
   align-items: center;

@@ -377,6 +377,13 @@ server/
   scripts/                          seed.ts and create-admin.ts (npm run seed, npm run create-admin)
 ```
 
+## 30. Google sign-in (in progress)
+
+- Step 1, done by the user: a Google Cloud project with an OAuth Client ID (Web application). The authorized JavaScript origins are `http://localhost` and `http://localhost:4200`, and the user's Gmail is a test user.
+- Step 2: `users` has an `email` column, with a unique index so two users can't share an email. `database.ts` adds it to older databases. `npm run create-admin` also reads `ADMIN_EMAIL` and saves it in lowercase. A blank `ADMIN_PASSWORD` keeps the existing password, so the email can be set on its own. Both changes are saved together, so a taken email changes nothing and prints "Another user already has the email ...".
+- Step 3: `POST /api/login/google` in `auth.routes.ts` uses `google-auth-library`. It checks the ID token's Google signature, expiry and audience (`GOOGLE_CLIENT_ID` in `server/.env`), and that Google has verified the email. It then finds the user by email and returns the same `{ token, username }` as password login. Unknown emails, and invalid or faked tokens, all get the same 401, so the route doesn't reveal which emails have accounts. Google accounts can't create new users.
+- Step 4: `src/app/core/google-sign-in.ts` loads Google's script once and holds the Client ID, which isn't secret but must match the server's. The login page asks Google to draw its own "Continue with Google" button into a `<div>`, because this method doesn't allow a custom button. `Auth.loginWithGoogle()` sends the ID token and saves our token like a password login. Errors show under the button.
+
 Problems met so far:
 
 - `Could not resolve "node:path/posix"`: fixed by adding `'@angular/cdk/schematics'` to `skip` in the remote's `federation.config.mjs`. Any remote using Material or CDK needs this.

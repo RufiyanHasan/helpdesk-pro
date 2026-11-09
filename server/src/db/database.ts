@@ -44,6 +44,16 @@ db.exec(`
   )
 `);
 
+// Google sign-in finds users by email. Adds the column to a users table created before it existed.
+const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
+
+if (!userColumns.includes('email')) {
+  db.exec('ALTER TABLE users ADD COLUMN email TEXT');
+}
+
+// Two users can't share an email. Users without one (NULL) are fine.
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users (email)');
+
 // Each user has their own vanity page: one row per user and section, with the settings stored as JSON.
 db.exec(`
   CREATE TABLE IF NOT EXISTS vanity_page_sections (

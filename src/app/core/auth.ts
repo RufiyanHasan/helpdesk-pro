@@ -26,6 +26,13 @@ export class Auth {
       .pipe(tap(({ token }) => localStorage.setItem(TOKEN_KEY, token)));
   }
 
+  // Sends the ID token from Google's button. The server checks it and returns our own token.
+  loginWithGoogle(credential: string): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>(API_URLS.googleLogin, { credential })
+      .pipe(tap(({ token }) => localStorage.setItem(TOKEN_KEY, token)));
+  }
+
   // The server keeps no session, so logging out only needs the token removed.
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);

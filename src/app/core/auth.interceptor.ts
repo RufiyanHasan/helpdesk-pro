@@ -6,7 +6,7 @@ import { Auth } from './auth';
 import { API_BASE_URL, API_URLS } from './api-urls';
 
 // A 401 from these is an expected answer, not a session that just ended.
-const LOGIN_CHECK_URLS = [API_URLS.login, API_URLS.me];
+const LOGIN_CHECK_URLS = [API_URLS.login, API_URLS.googleLogin, API_URLS.me];
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   if (!req.url.startsWith(API_BASE_URL)) {
