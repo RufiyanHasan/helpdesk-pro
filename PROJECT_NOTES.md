@@ -403,6 +403,22 @@ Hosting choice: Vercel (frontends and API) and Turso (database), both free with 
 - The Tickets production build had never been run before. It failed its 8 kB component-style budget because of CKEditor's 273 kB stylesheet, so the Tickets limit is now 300 kB. The shell keeps 8 kB.
 - `PORT` can be set in `.env`. Its default is 3000.
 
+## 33. Deployment
+
+The app is live at https://helpdesk-pro-tan.vercel.app. Vercel hosts the frontends and API, and Turso holds the database. Both are free and need no card. Vercel's Hobby plan is for non-commercial use only.
+
+- How it deploys: Vercel is connected to the GitHub repository. Every push to `main` builds and deploys production. Pushes to other branches get their own preview address. `vercel.json` (Services) and `scripts/build-vercel.mjs` control the build (see section 32), so the project has no build settings of its own in the Vercel dashboard.
+- Environment variables, set in Vercel under Settings → Environment Variables for Production and Preview: `JWT_SECRET` (its own value, not the local one), `GOOGLE_CLIENT_ID`, `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`. Changing one needs a redeploy.
+- Two separate databases: the live site uses Turso, and local `npm run dev` uses `server/helpdesk.db`. Changes in one don't appear in the other. `npm run copy-to-turso` (in `server/`) copies local data into Turso. It was used once to fill Turso. Pass the Turso URL and token on the command line, not in `.env`, or the local server will use Turso too.
+- Google sign-in: `https://helpdesk-pro-tan.vercel.app` is in the OAuth client's Authorized JavaScript origins, next to the two `localhost` ones. Any new address, such as a custom domain, must be added there too. Vercel preview addresses aren't added, so Google sign-in only works on the main address and locally. Password login works everywhere.
+- The first API request after a quiet spell can take a couple of seconds while it starts.
+
+Problems met during deployment:
+
+- `services.web.framework should be string`: `"framework": null` isn't allowed inside a service. It was removed, and Vercel detects the framework.
+- `Command "ng build" exited with 127`: the first project was created while `vercel.json` was invalid, so Vercel set it up as a plain Angular app with its own build settings. Deleting the project and importing it again, with no build overrides, fixed it.
+- "This app doesn't comply with Google's OAuth 2.0 policy": the live address wasn't in the OAuth client's Authorized JavaScript origins.
+
 Problems met so far:
 
 - `Could not resolve "node:path/posix"`: fixed by adding `'@angular/cdk/schematics'` to `skip` in the remote's `federation.config.mjs`. Any remote using Material or CDK needs this.
