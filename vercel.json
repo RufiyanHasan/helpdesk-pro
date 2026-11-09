@@ -3,7 +3,6 @@
   "services": {
     "web": {
       "root": ".",
-      "framework": null,
       "installCommand": "npm ci && npm --prefix projects/settings ci",
       "buildCommand": "node scripts/build-vercel.mjs",
       "outputDirectory": "dist-vercel",
