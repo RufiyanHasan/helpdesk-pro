@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { db } from './db.ts';
+import { db } from '../src/db/database.ts';
 
 interface Ticket {
   id: string;
@@ -105,7 +105,7 @@ function createTicket(id: string): Ticket {
   };
 }
 
-const file = join(import.meta.dirname, '../public/mock-data/tickets.json');
+const file = join(import.meta.dirname, '../../public/mock-data/tickets.json');
 const mockTickets: Ticket[] = JSON.parse(readFileSync(file, 'utf8'));
 const mockTicketsById = new Map(mockTickets.map((ticket) => [ticket.id, ticket]));
 

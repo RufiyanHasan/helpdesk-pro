@@ -20,7 +20,10 @@
       <h2 class="card__title">Sign in to Acme Corp</h2>
       <p class="card__subtitle">Use your work account to continue.</p>
 
-      <button class="button button--secondary" type="button">Continue with Google</button>
+      <div #googleButton class="google-button"></div>
+      @if (googleError()) {
+        <p class="field__error">{{ googleError() }}</p>
+      }
 
       <div class="divider">or</div>
 

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Auth } from '../../core/auth';
 
@@ -12,13 +12,8 @@ export class Dashboard {
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
 
-  protected readonly logoutFailed = signal(false);
-
   protected logout(): void {
-    this.logoutFailed.set(false);
-    this.auth.logout().subscribe({
-      next: () => this.router.navigateByUrl('/login'),
-      error: () => this.logoutFailed.set(true),
-    });
+    this.auth.logout();
+    this.router.navigateByUrl('/login');
   }
 }

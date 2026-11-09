@@ -270,6 +270,8 @@ New ticket IDs now come from a `ticket_counter` table in SQLite instead of the h
 
 ## 25. JWT login
 
+The cookie approach below was later replaced by a token in `localStorage`, and the server files moved. See section 29.
+
 Part 1 is done:
 
 - `server/.env` holds `JWT_SECRET`, and Git ignores it. `npm run dev` loads it with `--env-file=.env`.
@@ -288,7 +290,7 @@ Part 3 is done, in the shell's `src/app/core/`:
 - `auth.guards.ts`: `/dashboard` needs a login, and `/login` sends logged-in users to the dashboard. Both ask `GET /api/me`.
 - The token is in an `HttpOnly`, `SameSite=Strict` cookie, which JavaScript cannot read. It is also `Secure` when `NODE_ENV` is `production`. Browsers treat `localhost` on any port as the same site, but production domains must also be same-site, or these settings need changing.
 - The tickets remote's `Api` service also sends the cookie, so it works on its own at `localhost:4201` once you have logged in through the shell.
-- `login.ts` calls the API, and the hardcoded credentials and the `console.log` of the password are gone. `dashboard.html` has a "Log out" button.
+- `login.ts` calls the API, and the hardcoded credentials and the `console.log` of the password are gone. Both fields are required: submitting with an empty field shows "Username is required." or "Password is required." and sends nothing to the server. `dashboard.html` has a "Log out" button.
 
 Known limits: the sidebar's name "Alex Morgan" is still hardcoded. A malicious script cannot read the cookie, but it could still send requests while the page is open, so preventing XSS still matters, especially once ticket descriptions are displayed.
 
@@ -312,13 +314,75 @@ The Settings page now comes from a React app in `projects/settings`, built with 
 
 To run it, open two terminals in `projects/settings`: `npm run watch` rebuilds on save, and `npm run preview` serves the build to the shell. Refresh the browser to see a change. `watch` skips type checking, so run `npm run build` before committing.
 
-Styles go in `src/settings.css`, with every rule starting `.settings`. `mount.tsx` imports the file with `?inline`, adds it to the page when mounting and removes it when unmounting. A normal `import './x.css'` would not load in the shell. Use `@import` inside `settings.css` to split styles into more files.
+Styles go in `src/styles/settings.css`, with every rule starting `.settings`. `mount.tsx` imports the file with `?inline`, adds it to the page when mounting and removes it when unmounting. A normal `import './x.css'` would not load in the shell. Use `@import` inside `settings.css` to split styles into more files.
 
 Checked by hand: the React page shows in the shell, its button works, and leaving and returning mounts it again from a fresh state. With the React server stopped, Settings shows the error message and Tickets still works.
 
 ## 28. Vanity Page Configuration design
 
-The React Settings page now shows the Vanity Page Configuration layout, in `App.tsx`, `icons.tsx` and `settings.css`. It is only the design so far: the buttons, tabs and side sections don't do anything yet, and the preview text is fixed. Colours come from the shell's CSS variables.
+The React Settings page now shows the Vanity Page Configuration layout, in `App.tsx`, `icons.tsx` and `settings.css`. Colours come from the shell's CSS variables.
+
+- The side sections open and close, one at a time.
+- Page Text works (`PageTextSection.tsx`, `page-text.ts`). For the district name and the subtext, you can hide the text, or choose Custom and change the text and colour. The preview updates as you type. The settings live in `App`'s state, so they are lost on refresh until Save works.
+- Backend: each user has their own vanity page. The `vanity_page_sections` table in `db.ts` has one row per user and section, with the settings as JSON. `requireAuth` now also puts the logged-in user's ID in `res.locals.userId`. `GET /api/vanity-page/page-text` returns that user's saved Page Text, or `null` if they haven't saved any. `PUT` saves it after checking every field, so a half-typed colour or text over 100 characters is rejected. Both need a login.
+- Frontend: `src/api/vanity-page.ts` in the React app calls both routes with `fetch` and `credentials: 'include'`, so the login cookie is sent. The page loads the user's saved Page Text when it opens, and Save sends it. Save is disabled until loading succeeds, so a failed load can't overwrite saved settings with the defaults. A half-typed custom colour stops the save with a message. Running React on its own at `localhost:5173` can't call the API, because the server only allows ports 4200 and 4201.
+- Page Appearance works the same way (`PageAppearanceSection.tsx`, `page-appearance.ts`): page background colour, card background colour, and rounded or square button corners. The monogram belongs to the Monogram & Logo section, which will also have logo upload.
+- Monogram & Logo UI (`MonogramLogoSection.tsx`, `monogram-logo.ts`): choose Monogram or Logo. The monogram has Default letters (the first letter of the district name shown) or up to 2 custom letters, plus background and letter colours. The logo takes a PNG, JPG or SVG of up to 1 MB, with a thumbnail and Remove. The monogram settings are saved as the `monogram-logo` section. The logo file is saved separately in the `vanity_page_logos` table (one per user, as bytes) through `GET`, `PUT` and `DELETE /api/vanity-page/logo`. These routes sit before the `:section` routes. Uploading checks the type and size again, and also checks the file's first bytes, so a renamed file is rejected. The logo is served with a sandboxing Content Security Policy, so scripts inside an SVG can't run. A chosen or removed logo is only sent when Save is clicked.
+- Sign-in Block UI (`SignInBlockSection.tsx`, `sign-in-block.ts`) controls the white sign-in card: show or hide the heading, Default or Custom heading text and colour, card background colour, card border on or off, and rounded or square corners. It is saved per user as the `sign-in-block` section. The buttons inside the card belong to other sections: Google SSO goes in SSO Sign In Options (shown or hidden), and Sign in with Email and Continue as Guest go in Alternate Sign-in Options.
+- Alternate Sign-in Options (`AlternateSignInSection.tsx`, `alternate-sign-in.ts`): show or hide "Sign in with Email" and "Continue as Guest", each with Default or Custom button text and colour. Saved as `alternate-sign-in`.
+- Footer (`FooterSection.tsx`, `footer.ts`): show or hide the copyright line, with Default or Custom text and colour. The default text follows the district name and the current year. You can also show or hide "Powered by onflo" and set the footer background colour. If both are hidden, the footer disappears. Saved as `footer`.
+- URL Configuration (`UrlConfigurationSection.tsx`, `url-configuration.ts`): each user's page address, `VANITY_BASE_URL` plus a slug of 3 to 40 lowercase letters, numbers or hyphens, which is formatted as you type. `https://helpdesk.example.com/` is a placeholder domain. Saved as `url-configuration`. An empty slug means none has been chosen. A unique index in `db.ts` stops two users having the same slug, and the server answers 409, which the page shows as "That page URL is already taken". The preview shows the address above the page.
+- SSO Sign In Options (`SsoSignInSection.tsx`, `sso-sign-in.ts`): show or hide a Google sign-in button, with Default ("Sign in with Google") or Custom text and colour. It is hidden by default. In the preview, the button has Google's "G" logo and sits above the other options, with an "or" divider when Email or Guest is also shown. Saved as `sso-sign-in`. This only sets how the button looks: actually signing in with Google needs a Google OAuth client and the public login page, which aren't built yet.
+- Shared pieces: `lib/colors.ts` has the colour checks, `lib/text.ts` has the hideable text setting, and `lib/corners.ts` has the Rounded or Square choice. In `components/`, `ColorField.tsx` is the colour picker plus hex field, `ColorGroup.tsx` is a colour with a Default or Custom choice, and `TextGroup.tsx` is text that can be hidden with Default or Custom wording and colour.
+- Folder structure of `projects/settings/src`:
+
+  ```text
+  main.tsx, mount.tsx, App.tsx   entry points (main.tsx runs it alone, mount.tsx in the shell) and the page
+  api/vanity-page.ts             all calls to the server
+  components/                    shared controls: ColorField, ColorGroup, TextGroup, icons
+  lib/                           shared logic with no UI: colors, text, corners
+  sections/<section>/            one folder per settings section: its panel (<Name>Section.tsx) and its settings, defaults and checks (<section>.ts)
+  styles/                        settings.css (loaded by mount.tsx) and index.css (used only when run alone)
+  ```
+
+  Sections only import from `lib/` and `components/`. The one exception is Footer, which reads the default district name from Page Text. The unused Vite starter files (`App.css`, `src/assets/`, `public/icons.svg`) were removed.
+- The server now has one pair of routes for every section: `GET` and `PUT /api/vanity-page/:section`. `VANITY_SECTIONS` in `server.ts` lists the allowed sections, each with its own check. An unknown section returns a 404. A new section only needs an entry there.
+- Save sends every section at once, and the page loads every section when it opens.
+- Publish, the view tabs, Full Screen Preview and the other sections don't do anything yet.
+
+## 29. Token in localStorage, and server folders
+
+At the user's request, the login token moved from the `HttpOnly` cookie to `localStorage`.
+
+- `POST /api/login` returns `{ token, username }` and no longer sets a cookie. `/api/logout` was removed, because the server keeps no session.
+- `requireAuth` reads the `Authorization: Bearer <token>` header. Tokens still last 1 hour, and expired, forged, or unsigned tokens get a 401.
+- `cookie-parser` was uninstalled, and CORS no longer allows credentials.
+- Shell (`src/app/core/`): `Auth` saves the token under `helpdesk.token` (`TOKEN_KEY`). Log out just removes it. `isLoggedIn()` asks `/api/me` and removes a token that no longer works. The interceptor adds the header to API requests, and on a 401 it removes the token and goes to `/login`. The dashboard's "Could not log out" message was removed, because logging out can no longer fail.
+- The tickets remote's `Api` and the React app's `api/vanity-page.ts` read the same key and send the header themselves.
+- Trade-off: any script running on the page can read the token, unlike the old cookie. Running the tickets remote alone at `localhost:4201` now has no token, because `localStorage` is separate for each port.
+
+The server code is now in folders. `server.ts` stays the entry file, so `npm run dev` didn't change:
+
+```text
+server/
+  server.ts                         starts the app
+  src/app.ts                        Express app: CORS, JSON, and which router handles which path
+  src/config.ts                     port and allowed origins
+  src/db/database.ts                SQLite connection and tables (helpdesk.db stays in server/)
+  src/auth/password.ts, token.ts    password hashing, and creating and checking tokens
+  src/middleware/require-auth.ts    checks the Bearer token
+  src/routes/                       auth.routes.ts, tickets.routes.ts, vanity-page.routes.ts
+  src/validation/                   vanity-sections.ts (each section's checks), logo.ts (file checks)
+  src/utils/text.ts                 text() helper
+  scripts/                          seed.ts and create-admin.ts (npm run seed, npm run create-admin)
+```
+
+## 30. Google sign-in (in progress)
+
+- Step 1, done by the user: a Google Cloud project with an OAuth Client ID (Web application). The authorized JavaScript origins are `http://localhost` and `http://localhost:4200`, and the user's Gmail is a test user.
+- Step 2: `users` has an `email` column, with a unique index so two users can't share an email. `database.ts` adds it to older databases. `npm run create-admin` also reads `ADMIN_EMAIL` and saves it in lowercase. A blank `ADMIN_PASSWORD` keeps the existing password, so the email can be set on its own. Both changes are saved together, so a taken email changes nothing and prints "Another user already has the email ...".
+- Step 3: `POST /api/login/google` in `auth.routes.ts` uses `google-auth-library`. It checks the ID token's Google signature, expiry and audience (`GOOGLE_CLIENT_ID` in `server/.env`), and that Google has verified the email. It then finds the user by email and returns the same `{ token, username }` as password login. Unknown emails, and invalid or faked tokens, all get the same 401, so the route doesn't reveal which emails have accounts. Google accounts can't create new users.
+- Step 4: `src/app/core/google-sign-in.ts` loads Google's script once. The Client ID is only in `server/.env`. The login page gets it from `GET /api/login/google/config`, which needs no login and returns `{ clientId }`, or 404 if it isn't set. It isn't secret, but this way there is one copy and none in the frontend code. If the config request fails, the page shows "Google sign-in is unavailable right now." and password login still works. The login page asks Google to draw its own "Continue with Google" button into a `<div>`, because this method doesn't allow a custom button. `Auth.loginWithGoogle()` sends the ID token and saves our token like a password login. Errors show under the button.
 
 Problems met so far:
 
