@@ -5,6 +5,8 @@ const USERNAME = process.env.ADMIN_USERNAME;
 const PASSWORD = process.env.ADMIN_PASSWORD;
 // Stored in lowercase, because Google sends emails in lowercase.
 const EMAIL = process.env.ADMIN_EMAIL?.trim().toLowerCase() || null;
+// The person's name shown in the app, e.g. "Rufiyan Hasan".
+const NAME = process.env.ADMIN_NAME?.trim() || null;
 
 if (!USERNAME) {
   console.error('Set ADMIN_USERNAME in .env first');
@@ -18,11 +20,11 @@ if (!existingUser && !PASSWORD) {
   process.exit(1);
 }
 
-// Both changes are saved together, so a taken email doesn't leave a half-created user behind.
+// All changes are saved together, so a taken email doesn't leave a half-created user behind.
 db.exec('BEGIN');
 
 try {
-  // A blank password keeps the existing one, so you can set just the email.
+  // A blank password keeps the existing one, so you can set just the email or name.
   if (PASSWORD) {
     db.prepare(`
       INSERT INTO users (username, password_hash) VALUES (?, ?)
@@ -32,6 +34,10 @@ try {
 
   if (EMAIL) {
     db.prepare('UPDATE users SET email = ? WHERE username = ?').run(EMAIL, USERNAME);
+  }
+
+  if (NAME) {
+    db.prepare('UPDATE users SET name = ? WHERE username = ?').run(NAME, USERNAME);
   }
 
   db.exec('COMMIT');
@@ -44,4 +50,5 @@ try {
   throw error;
 }
 
-console.log(`User "${USERNAME}" is ready${EMAIL ? ` with email ${EMAIL}` : ''}`);
+const details = [NAME && `name ${NAME}`, EMAIL && `email ${EMAIL}`].filter(Boolean).join(' and ');
+console.log(`User "${USERNAME}" is ready${details ? ` with ${details}` : ''}`);

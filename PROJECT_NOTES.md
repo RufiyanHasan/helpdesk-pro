@@ -387,6 +387,7 @@ server/
 ## 31. Username in the sidebar, and a favicon
 
 - The sidebar shows the logged-in username and its initials instead of "Alex Morgan". `Auth` keeps the name in a read-only `username` signal. It is set on password or Google login, set by `isLoggedIn()` from `/api/me` when a page loads, and cleared on log out, so the sidebar needs no extra request. Initials take the first letter of the first two words (`priya.sharma` becomes "PS"), or the first two letters of a single word (`admin` becomes "AD"). Long names end in "…". The "Admin" role under the name is still hardcoded, because users have no roles yet.
+- Later, users got a `name` column for the person's real name. The sidebar shows the name ("Rufiyan Hasan", initials "RH"), or the username if no name is set. `/api/login`, `/api/login/google` and `/api/me` return `name`, and `/api/me` reads it from the database, so a changed name shows after a refresh. `npm run create-admin` sets it from `ADMIN_NAME` in `server/.env`. Google sign-in fills in a missing name from the Google account, but never replaces a name that is already set. `Auth.displayName` is the name, or the username if there's no name.
 - New favicon in `public/`: a blue rounded square with a white speech bubble and a tick. `favicon.svg` is the main icon. `favicon.png` (32 × 32) is for browsers without SVG icons, and `apple-touch-icon.png` (180 × 180, square corners) is for iPhone home screens. The PNGs were rendered from the SVG in headless Chrome. The old Angular `favicon.ico` was removed.
 
 Problems met so far:

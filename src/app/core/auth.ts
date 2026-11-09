@@ -1,14 +1,19 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 import { API_URLS } from './api-urls';
 
 // The tickets remote and the React settings page read the token from the same key.
 export const TOKEN_KEY = 'helpdesk.token';
 
-interface LoginResponse {
-  token: string;
+interface CurrentUser {
   username: string;
+  // The person's name, e.g. "Rufiyan Hasan". null when it hasn't been set.
+  name: string | null;
+}
+
+interface LoginResponse extends CurrentUser {
+  token: string;
 }
 
 // The token is kept in localStorage, and the auth interceptor sends it with every API request.
@@ -16,10 +21,14 @@ interface LoginResponse {
 export class Auth {
   private readonly http = inject(HttpClient);
 
-  private readonly currentUsername = signal('');
+  private readonly currentUser = signal<CurrentUser | null>(null);
 
-  // The logged-in user's name, set when they log in or when a page load checks their token.
-  readonly username = this.currentUsername.asReadonly();
+  // The name to show for the logged-in user: their name, or their username if no name is set.
+  // It's filled in when they log in, or when a page load checks their token.
+  readonly displayName = computed(() => {
+    const user = this.currentUser();
+    return user ? user.name || user.username : '';
+  });
 
   token(): string | null {
     return localStorage.getItem(TOKEN_KEY);
@@ -48,7 +57,7 @@ export class Auth {
   // The server keeps no session, so logging out only needs the token removed.
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
-    this.currentUsername.set('');
+    this.currentUser.set(null);
   }
 
   // Asks the server, because a stored token may have expired or been changed.
@@ -56,9 +65,9 @@ export class Auth {
     if (!this.token()) {
       return of(false);
     }
-    return this.http.get<{ username: string }>(API_URLS.me).pipe(
-      map(({ username }) => {
-        this.currentUsername.set(username);
+    return this.http.get<CurrentUser>(API_URLS.me).pipe(
+      map(({ username, name }) => {
+        this.currentUser.set({ username, name });
         return true;
       }),
       catchError(() => {
@@ -68,8 +77,8 @@ export class Auth {
     );
   }
 
-  private saveLogin({ token, username }: LoginResponse): void {
+  private saveLogin({ token, username, name }: LoginResponse): void {
     localStorage.setItem(TOKEN_KEY, token);
-    this.currentUsername.set(username);
+    this.currentUser.set({ username, name });
   }
 }
