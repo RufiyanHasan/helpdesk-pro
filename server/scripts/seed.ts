@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { db } from '../src/db/database.ts';
+import type { InStatement } from '@libsql/client';
+import { databaseReady, db } from '../src/db/database.ts';
 
 interface Ticket {
   id: string;
@@ -109,20 +110,26 @@ const file = join(import.meta.dirname, '../../public/mock-data/tickets.json');
 const mockTickets: Ticket[] = JSON.parse(readFileSync(file, 'utf8'));
 const mockTicketsById = new Map(mockTickets.map((ticket) => [ticket.id, ticket]));
 
-const insert = db.prepare(`
+const INSERT_TICKET = `
   INSERT OR REPLACE INTO tickets (id, subject, topic, status, priority, assignee, updated)
   VALUES (:id, :subject, :topic, :status, :priority, :assignee, :updated)
-`);
+`;
 
-db.exec('BEGIN');
+await databaseReady;
+
+const statements: InStatement[] = [];
 
 for (let i = 0; i < TOTAL_TICKETS; i++) {
   const id = `HD-${String(LATEST_TICKET_NUMBER - i).padStart(5, '0')}`;
-  insert.run({ ...(mockTicketsById.get(id) ?? createTicket(id)) });
+  statements.push({ sql: INSERT_TICKET, args: { ...(mockTicketsById.get(id) ?? createTicket(id)) } });
 }
 
-db.prepare('UPDATE ticket_counter SET last_number = MAX(last_number, ?)').run(LATEST_TICKET_NUMBER);
+statements.push({
+  sql: 'UPDATE ticket_counter SET last_number = MAX(last_number, ?)',
+  args: [LATEST_TICKET_NUMBER],
+});
 
-db.exec('COMMIT');
+// A batch is saved all together, like the transaction it replaces.
+await db.batch(statements, 'write');
 
 console.log(`Seeded ${TOTAL_TICKETS} tickets`);

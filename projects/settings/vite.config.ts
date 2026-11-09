@@ -10,5 +10,7 @@ export default defineConfig({
       output: { entryFileNames: 'mount.js' },
     },
   },
-  preview: { port: 4203, strictPort: true },
+  // Forwards /api to the server when React runs on its own.
+  server: { proxy: { '/api': 'http://localhost:3000' } },
+  preview: { port: 4203, strictPort: true, proxy: { '/api': 'http://localhost:3000' } },
 });

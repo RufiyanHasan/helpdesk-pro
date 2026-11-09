@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db } from '../db/database.ts';
+import { queryAll, queryOne, run } from '../db/database.ts';
 import { text } from '../utils/text.ts';
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -25,11 +25,11 @@ const TOPICS = ['Account access', 'Billing', 'Branding', 'Content', 'Integration
 const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function nextTicketId(): string {
-    const { last_number } = db.prepare(
+async function nextTicketId(): Promise<string> {
+    const counter = await queryOne<{ last_number: number }>(
         'UPDATE ticket_counter SET last_number = last_number + 1 RETURNING last_number'
-    ).get() as { last_number: number };
-    return `HD-${String(last_number).padStart(5, '0')}`;
+    );
+    return `HD-${String(counter!.last_number).padStart(5, '0')}`;
 }
 
 function positiveNumber(value: unknown, fallback: number): number {
@@ -47,7 +47,7 @@ function orderBy(sortBy: unknown, sortDir: unknown): string {
 
 export const ticketsRouter = Router();
 
-ticketsRouter.post('/', (req,res)=>{
+ticketsRouter.post('/', async (req,res)=>{
     const requesterEmail = text(req.body?.requesterEmail);
     const topic = text(req.body?.topic);
     const subject = text(req.body?.subject);
@@ -59,17 +59,17 @@ ticketsRouter.post('/', (req,res)=>{
         return;
     }
 
-    const id = nextTicketId();
+    const id = await nextTicketId();
 
-    db.prepare(`
+    await run(`
         INSERT INTO tickets (id, subject, topic, status, priority, assignee, updated, requester_email, description)
         VALUES (:id, :subject, :topic, 'Open', :priority, 'Unassigned', 'Just now', :requesterEmail, :description)
-    `).run({ id, subject, topic, priority, requesterEmail, description });
+    `, { id, subject, topic, priority, requesterEmail, description });
 
-    res.status(201).json(db.prepare('SELECT * FROM tickets WHERE id = :id').get({ id }));
+    res.status(201).json(await queryOne('SELECT * FROM tickets WHERE id = :id', { id }));
 })
 
-ticketsRouter.delete('/', (req,res)=>{
+ticketsRouter.delete('/', async (req,res)=>{
     const ids: unknown = req.body?.ids;
 
     if (
@@ -83,12 +83,12 @@ ticketsRouter.delete('/', (req,res)=>{
     }
 
     const placeholders = ids.map(() => '?').join(', ');
-    const { changes } = db.prepare(`DELETE FROM tickets WHERE id IN (${placeholders})`).run(...ids);
+    const { rowsAffected } = await run(`DELETE FROM tickets WHERE id IN (${placeholders})`, ids);
 
-    res.json({ deleted: Number(changes) });
+    res.json({ deleted: rowsAffected });
 })
 
-ticketsRouter.get('/', (req,res)=>{
+ticketsRouter.get('/', async (req,res)=>{
     const page = positiveNumber(req.query.page, 1);
     const pageSize = Math.min(positiveNumber(req.query.pageSize, DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
     const term = typeof req.query.search === 'string' ? req.query.search.trim() : '';
@@ -106,18 +106,20 @@ ticketsRouter.get('/', (req,res)=>{
 
     const where = `WHERE ${conditions.join(' AND ')}`;
 
-    const { total } = db.prepare(`SELECT COUNT(*) AS total FROM tickets ${where}`).get(params) as { total: number };
-    const tickets = db.prepare(`
-        SELECT * FROM tickets ${where}
-        ORDER BY ${orderBy(req.query.sortBy, req.query.sortDir)}
-        LIMIT :limit OFFSET :offset
-    `).all({ ...params, limit: pageSize, offset: (page - 1) * pageSize });
+    const [count, tickets] = await Promise.all([
+        queryOne<{ total: number }>(`SELECT COUNT(*) AS total FROM tickets ${where}`, params),
+        queryAll(`
+            SELECT * FROM tickets ${where}
+            ORDER BY ${orderBy(req.query.sortBy, req.query.sortDir)}
+            LIMIT :limit OFFSET :offset
+        `, { ...params, limit: pageSize, offset: (page - 1) * pageSize }),
+    ]);
 
-    res.json({ tickets, total });
+    res.json({ tickets, total: count!.total });
 })
 
-ticketsRouter.get('/:id', (req,res)=>{
-    const ticket = db.prepare('SELECT * FROM tickets WHERE id = ?').get(req.params.id);
+ticketsRouter.get('/:id', async (req,res)=>{
+    const ticket = await queryOne('SELECT * FROM tickets WHERE id = ?', [req.params.id]);
 
     if (!ticket) {
         res.status(404).json({ error: 'Ticket not found' });

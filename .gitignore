@@ -2,6 +2,10 @@
 
 # Compiled output
 /dist
+/dist-vercel
+
+# Vercel CLI project link and pulled settings
+.vercel
 /tmp
 /out-tsc
 /bazel-out
