@@ -44,11 +44,14 @@ db.exec(`
   )
 `);
 
-// Google sign-in finds users by email. Adds the column to a users table created before it existed.
+// Adds the newer columns to a users table created before they existed.
+// email: Google sign-in finds users by it. name: the person's name shown in the app, e.g. "Rufiyan Hasan".
 const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
 
-if (!userColumns.includes('email')) {
-  db.exec('ALTER TABLE users ADD COLUMN email TEXT');
+for (const column of ['email', 'name']) {
+  if (!userColumns.includes(column)) {
+    db.exec(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
+  }
 }
 
 // Two users can't share an email. Users without one (NULL) are fine.

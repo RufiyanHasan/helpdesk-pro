@@ -36,9 +36,9 @@
     </nav>
 
     <div class="sidebar__user">
-      <span class="sidebar__avatar">AM</span>
-      <div>
-        <div class="sidebar__user-name">Alex Morgan</div>
+      <span class="sidebar__avatar" aria-hidden="true">{{ initials() }}</span>
+      <div class="sidebar__user-details">
+        <div class="sidebar__user-name" [title]="displayName()">{{ displayName() }}</div>
         <div class="sidebar__user-role">Admin</div>
       </div>
       <button class="sidebar__logout" type="button" (click)="logout()">Log out</button>
