@@ -11,9 +11,21 @@ export class ApiError extends Error {
   }
 }
 
-// The login cookie is only sent to the API with credentials: 'include'.
+// The same key the shell's Auth service saves the token under. React runs inside the shell's page,
+// so it can read the shell's localStorage.
+const TOKEN_KEY = 'helpdesk.token';
+
+function withToken(init: RequestInit = {}): RequestInit {
+  const headers = new Headers(init.headers);
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return { ...init, headers };
+}
+
 async function send(url: string, init: RequestInit = {}): Promise<Response> {
-  const response = await fetch(url, { ...init, credentials: 'include' });
+  const response = await fetch(url, withToken(init));
   if (!response.ok) {
     throw new ApiError(response.status, response.statusText);
   }
@@ -37,7 +49,7 @@ export async function saveVanitySection<T>(section: string, settings: T): Promis
 
 // null means the user hasn't uploaded a logo.
 export async function getLogo(): Promise<Blob | null> {
-  const response = await fetch(LOGO_URL, { credentials: 'include' });
+  const response = await fetch(LOGO_URL, withToken());
   if (response.status === 404) {
     return null;
   }

@@ -270,6 +270,8 @@ New ticket IDs now come from a `ticket_counter` table in SQLite instead of the h
 
 ## 25. JWT login
 
+The cookie approach below was later replaced by a token in `localStorage`, and the server files moved. See section 29.
+
 Part 1 is done:
 
 - `server/.env` holds `JWT_SECRET`, and Git ignores it. `npm run dev` loads it with `--env-file=.env`.
@@ -347,6 +349,33 @@ The React Settings page now shows the Vanity Page Configuration layout, in `App.
 - The server now has one pair of routes for every section: `GET` and `PUT /api/vanity-page/:section`. `VANITY_SECTIONS` in `server.ts` lists the allowed sections, each with its own check. An unknown section returns a 404. A new section only needs an entry there.
 - Save sends every section at once, and the page loads every section when it opens.
 - Publish, the view tabs, Full Screen Preview and the other sections don't do anything yet.
+
+## 29. Token in localStorage, and server folders
+
+At the user's request, the login token moved from the `HttpOnly` cookie to `localStorage`.
+
+- `POST /api/login` returns `{ token, username }` and no longer sets a cookie. `/api/logout` was removed, because the server keeps no session.
+- `requireAuth` reads the `Authorization: Bearer <token>` header. Tokens still last 1 hour, and expired, forged, or unsigned tokens get a 401.
+- `cookie-parser` was uninstalled, and CORS no longer allows credentials.
+- Shell (`src/app/core/`): `Auth` saves the token under `helpdesk.token` (`TOKEN_KEY`). Log out just removes it. `isLoggedIn()` asks `/api/me` and removes a token that no longer works. The interceptor adds the header to API requests, and on a 401 it removes the token and goes to `/login`. The dashboard's "Could not log out" message was removed, because logging out can no longer fail.
+- The tickets remote's `Api` and the React app's `api/vanity-page.ts` read the same key and send the header themselves.
+- Trade-off: any script running on the page can read the token, unlike the old cookie. Running the tickets remote alone at `localhost:4201` now has no token, because `localStorage` is separate for each port.
+
+The server code is now in folders. `server.ts` stays the entry file, so `npm run dev` didn't change:
+
+```text
+server/
+  server.ts                         starts the app
+  src/app.ts                        Express app: CORS, JSON, and which router handles which path
+  src/config.ts                     port and allowed origins
+  src/db/database.ts                SQLite connection and tables (helpdesk.db stays in server/)
+  src/auth/password.ts, token.ts    password hashing, and creating and checking tokens
+  src/middleware/require-auth.ts    checks the Bearer token
+  src/routes/                       auth.routes.ts, tickets.routes.ts, vanity-page.routes.ts
+  src/validation/                   vanity-sections.ts (each section's checks), logo.ts (file checks)
+  src/utils/text.ts                 text() helper
+  scripts/                          seed.ts and create-admin.ts (npm run seed, npm run create-admin)
+```
 
 Problems met so far:
 

@@ -1,7 +1,8 @@
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-export const db = new DatabaseSync(join(import.meta.dirname, 'helpdesk.db'));
+// The database file stays in the server folder, two levels up from here.
+export const db = new DatabaseSync(join(import.meta.dirname, '..', '..', 'helpdesk.db'));
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS tickets (

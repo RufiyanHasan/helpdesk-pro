@@ -1,5 +1,5 @@
-import { hashPassword } from './auth.ts';
-import { db } from './db.ts';
+import { hashPassword } from '../src/auth/password.ts';
+import { db } from '../src/db/database.ts';
 
 const USERNAME = process.env.ADMIN_USERNAME;
 const PASSWORD = process.env.ADMIN_PASSWORD;
