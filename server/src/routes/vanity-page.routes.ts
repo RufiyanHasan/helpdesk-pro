@@ -1,5 +1,5 @@
 import express, { Router, type NextFunction, type Request, type Response } from 'express';
-import { db } from '../db/database.ts';
+import { queryOne, run } from '../db/database.ts';
 import { isLogoFile, LOGO_TYPES, MAX_LOGO_BYTES } from '../validation/logo.ts';
 import { VANITY_SECTIONS } from '../validation/vanity-sections.ts';
 
@@ -7,9 +7,11 @@ export const vanityPageRouter = Router();
 
 // The logo is a file, so it has its own routes. They come before the section routes, which would
 // otherwise treat "logo" as an unknown section.
-vanityPageRouter.get('/logo', (req,res)=>{
-    const row = db.prepare('SELECT content_type, data FROM vanity_page_logos WHERE user_id = ?').get(res.locals.userId) as
-        { content_type: string; data: Uint8Array } | undefined;
+vanityPageRouter.get('/logo', async (req,res)=>{
+    // The database returns the file's bytes as an ArrayBuffer.
+    const row = await queryOne<{ content_type: string; data: ArrayBuffer }>(
+        'SELECT content_type, data FROM vanity_page_logos WHERE user_id = ?', [res.locals.userId]
+    );
 
     if (!row) {
         res.status(404).json({ error: 'No logo' });
@@ -23,10 +25,10 @@ vanityPageRouter.get('/logo', (req,res)=>{
         'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'no-store',
     });
-    res.send(Buffer.from(row.data));
+    res.send(Buffer.from(new Uint8Array(row.data)));
 })
 
-vanityPageRouter.put('/logo', express.raw({ type: LOGO_TYPES, limit: MAX_LOGO_BYTES }), (req,res)=>{
+vanityPageRouter.put('/logo', express.raw({ type: LOGO_TYPES, limit: MAX_LOGO_BYTES }), async (req,res)=>{
     const type = (req.get('Content-Type') ?? '').split(';')[0].trim().toLowerCase();
 
     if (!Buffer.isBuffer(req.body) || !isLogoFile(type, req.body)) {
@@ -34,16 +36,16 @@ vanityPageRouter.put('/logo', express.raw({ type: LOGO_TYPES, limit: MAX_LOGO_BY
         return;
     }
 
-    db.prepare(`
+    await run(`
         INSERT INTO vanity_page_logos (user_id, content_type, data) VALUES (?, ?, ?)
         ON CONFLICT (user_id) DO UPDATE SET content_type = excluded.content_type, data = excluded.data
-    `).run(res.locals.userId, type, req.body);
+    `, [res.locals.userId, type, req.body]);
 
     res.status(204).end();
 })
 
-vanityPageRouter.delete('/logo', (req,res)=>{
-    db.prepare('DELETE FROM vanity_page_logos WHERE user_id = ?').run(res.locals.userId);
+vanityPageRouter.delete('/logo', async (req,res)=>{
+    await run('DELETE FROM vanity_page_logos WHERE user_id = ?', [res.locals.userId]);
     res.status(204).end();
 })
 
@@ -65,16 +67,17 @@ vanityPageRouter.param('section', (req,res,next,section: string)=>{
     next();
 })
 
-vanityPageRouter.get('/:section', (req,res)=>{
-    const row = db.prepare(`
-        SELECT settings FROM vanity_page_sections WHERE user_id = ? AND section = ?
-    `).get(res.locals.userId, req.params.section) as { settings: string } | undefined;
+vanityPageRouter.get('/:section', async (req,res)=>{
+    const row = await queryOne<{ settings: string }>(
+        'SELECT settings FROM vanity_page_sections WHERE user_id = ? AND section = ?',
+        [res.locals.userId, req.params.section]
+    );
 
     // Nothing saved yet, so the page keeps its own defaults.
     res.json(row ? JSON.parse(row.settings) : null);
 })
 
-vanityPageRouter.put('/:section', (req,res)=>{
+vanityPageRouter.put('/:section', async (req,res)=>{
     const body = typeof req.body === 'object' && req.body !== null ? req.body : {};
     const settings = VANITY_SECTIONS[req.params.section](body);
 
@@ -84,10 +87,10 @@ vanityPageRouter.put('/:section', (req,res)=>{
     }
 
     try {
-        db.prepare(`
+        await run(`
             INSERT INTO vanity_page_sections (user_id, section, settings) VALUES (?, ?, ?)
             ON CONFLICT (user_id, section) DO UPDATE SET settings = excluded.settings
-        `).run(res.locals.userId, req.params.section, JSON.stringify(settings));
+        `, [res.locals.userId, req.params.section, JSON.stringify(settings)]);
     } catch (error) {
         // The unique index on page URLs rejects a URL another user already has.
         if (error instanceof Error && error.message.includes('vanity_page_url_slug')) {

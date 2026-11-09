@@ -10,9 +10,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "node --watch --env-file=.env server.ts",
     "seed": "node scripts/seed.ts",
-    "create-admin": "node --env-file=.env scripts/create-admin.ts"
+    "create-admin": "node --env-file=.env scripts/create-admin.ts",
+    "copy-to-turso": "node --env-file=.env scripts/copy-to-turso.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "cors": "^2.8.6",
     "express": "^5.3.0",
     "google-auth-library": "^11.3.3",

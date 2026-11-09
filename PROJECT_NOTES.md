@@ -390,6 +390,19 @@ server/
 - Later, users got a `name` column for the person's real name. The sidebar shows the name ("Rufiyan Hasan", initials "RH"), or the username if no name is set. `/api/login`, `/api/login/google` and `/api/me` return `name`, and `/api/me` reads it from the database, so a changed name shows after a refresh. `npm run create-admin` sets it from `ADMIN_NAME` in `server/.env`. Google sign-in fills in a missing name from the Google account, but never replaces a name that is already set. `Auth.displayName` is the name, or the username if there's no name.
 - New favicon in `public/`: a blue rounded square with a white speech bubble and a tick. `favicon.svg` is the main icon. `favicon.png` (32 × 32) is for browsers without SVG icons, and `apple-touch-icon.png` (180 × 180, square corners) is for iPhone home screens. The PNGs were rendered from the SVG in headless Chrome. The old Angular `favicon.ico` was removed.
 
+## 32. Ready for Vercel and Turso
+
+Hosting choice: Vercel (frontends and API) and Turso (database), both free with no card. Vercel's free Hobby plan is for non-commercial use.
+
+- Database: the server uses Turso's `@libsql/client` instead of `node:sqlite`, so every database call is now `await`ed. `src/db/database.ts` connects to Turso when `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set, and otherwise to the local `server/helpdesk.db`, so local development is unchanged. It has small helpers, `queryOne`, `queryAll` and `run`. The tables are created once per server start (`databaseReady`), and `app.ts` makes every request wait for that. Scripts use `db.batch(..., 'write')`, which is saved all together, in place of `BEGIN`/`COMMIT`.
+- `npm run copy-to-turso` copies every table from the local database into Turso. It's run once after creating the Turso database.
+- API addresses are now `/api` on the same domain in all three apps. In development, `proxy.conf.json`, used by both Angular dev servers through `angular.json`, and the Vite `proxy` setting forward `/api` to port 3000.
+- `src/main.ts` reads `federation.manifest.json` and turns its addresses into full URLs. The dev manifest keeps its `localhost` addresses. The production manifest, written by the build script, uses `/tickets/remoteEntry.json` and `/settings/remoteEntry.json`, so it works on any domain, including Vercel preview URLs.
+- `scripts/build-vercel.mjs` (root) builds the shell, Tickets and React into `dist-vercel/`, with Tickets in `tickets/` and React in `settings/`. It overwrites `dist/`, so it must not be run while `ng serve` is running.
+- `vercel.json` uses Vercel Services. `web` is the static `dist-vercel` folder, with a fallback to `index.html` for Angular routes. `api` is the Express app (`server/src/app.ts`, which now has `export default app`). `/api/*` goes to `api`, and everything else goes to `web`.
+- The Tickets production build had never been run before. It failed its 8 kB component-style budget because of CKEditor's 273 kB stylesheet, so the Tickets limit is now 300 kB. The shell keeps 8 kB.
+- `PORT` can be set in `.env`. Its default is 3000.
+
 Problems met so far:
 
 - `Could not resolve "node:path/posix"`: fixed by adding `'@angular/cdk/schematics'` to `skip` in the remote's `federation.config.mjs`. Any remote using Material or CDK needs this.

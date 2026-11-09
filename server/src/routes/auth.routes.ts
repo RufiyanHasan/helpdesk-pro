@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { verifyPassword } from '../auth/password.ts';
 import { createToken } from '../auth/token.ts';
-import { db } from '../db/database.ts';
+import { queryOne, run } from '../db/database.ts';
 import { requireAuth } from '../middleware/require-auth.ts';
 import { text } from '../utils/text.ts';
 
@@ -21,12 +21,13 @@ function loginResponse(user: User) {
     return { token: createToken(user.id, user.username), username: user.username, name: user.name };
 }
 
-authRouter.post('/login', (req,res)=>{
+authRouter.post('/login', async (req,res)=>{
     const username = text(req.body?.username);
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
 
-    const user = db.prepare('SELECT id, username, name, password_hash FROM users WHERE username = ?').get(username) as
-        (User & { password_hash: string }) | undefined;
+    const user = await queryOne<User & { password_hash: string }>(
+        'SELECT id, username, name, password_hash FROM users WHERE username = ?', [username]
+    );
 
     if (!user || !verifyPassword(password, user.password_hash)) {
         res.status(401).json({ error: 'Invalid username or password' });
@@ -74,7 +75,7 @@ authRouter.post('/login/google', async (req,res)=>{
 
     // Only existing users can sign in. A Google account with an unknown email can't create one.
     const user = email
-        ? (db.prepare('SELECT id, username, name FROM users WHERE email = ?').get(email) as User | undefined)
+        ? await queryOne<User>('SELECT id, username, name FROM users WHERE email = ?', [email])
         : undefined;
 
     if (!user) {
@@ -84,7 +85,7 @@ authRouter.post('/login/google', async (req,res)=>{
 
     // Fills in a missing name from the Google account. A name that is already set is never replaced.
     if (!user.name && googleName) {
-        db.prepare('UPDATE users SET name = ? WHERE id = ?').run(googleName, user.id);
+        await run('UPDATE users SET name = ? WHERE id = ?', [googleName, user.id]);
         user.name = googleName;
     }
 
@@ -92,9 +93,8 @@ authRouter.post('/login/google', async (req,res)=>{
 })
 
 // The name isn't in the token, so it's read from the database, which also picks up any change to it.
-authRouter.get('/me', requireAuth, (req,res)=>{
-    const user = db.prepare('SELECT name FROM users WHERE id = ?').get(res.locals.userId) as
-        { name: string | null } | undefined;
+authRouter.get('/me', requireAuth, async (req,res)=>{
+    const user = await queryOne<{ name: string | null }>('SELECT name FROM users WHERE id = ?', [res.locals.userId]);
 
     res.json({ username: res.locals.username, name: user?.name ?? null });
 })

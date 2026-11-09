@@ -1,4 +1,5 @@
-const VANITY_PAGE_URL = 'http://localhost:3000/api/vanity-page';
+// Same domain as the shell page this runs inside. In development, the shell's proxy forwards /api to port 3000.
+const VANITY_PAGE_URL = '/api/vanity-page';
 const LOGO_URL = `${VANITY_PAGE_URL}/logo`;
 
 // Keeps the status code, so callers can tell e.g. a taken URL (409) from other failures.
