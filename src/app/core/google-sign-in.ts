@@ -1,7 +1,3 @@
-// Not a secret: Google shows it to every browser that loads the sign-in button.
-// It must match GOOGLE_CLIENT_ID in server/.env.
-export const GOOGLE_CLIENT_ID = '960305526507-mp1tm1aff31e6ubd57qbep0sippor98o.apps.googleusercontent.com';
-
 const SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 
 interface GoogleCredentialResponse {

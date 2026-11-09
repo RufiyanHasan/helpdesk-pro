@@ -2,8 +2,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { afterNextRender, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { Auth } from '../../core/auth';
-import { GOOGLE_CLIENT_ID, loadGoogleSignIn } from '../../core/google-sign-in';
+import { loadGoogleSignIn } from '../../core/google-sign-in';
 
 // Google's button can't be wider than this.
 const MAX_GOOGLE_BUTTON_WIDTH = 400;
@@ -35,10 +36,11 @@ export class Login {
   constructor() {
     // Runs once the page is on screen, because Google needs the empty div to draw its button into.
     afterNextRender(() => {
-      loadGoogleSignIn()
-        .then((google) => {
+      // Fetches the Client ID and loads Google's script at the same time.
+      Promise.all([firstValueFrom(this.auth.googleClientId()), loadGoogleSignIn()])
+        .then(([clientId, google]) => {
           google.initialize({
-            client_id: GOOGLE_CLIENT_ID,
+            client_id: clientId,
             callback: ({ credential }) => this.signInWithGoogle(credential),
           });
           const element = this.googleButton().nativeElement;

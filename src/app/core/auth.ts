@@ -26,6 +26,13 @@ export class Auth {
       .pipe(tap(({ token }) => localStorage.setItem(TOKEN_KEY, token)));
   }
 
+  // The Client ID lives only in server/.env, so the login page asks the server for it.
+  googleClientId(): Observable<string> {
+    return this.http
+      .get<{ clientId: string }>(API_URLS.googleConfig)
+      .pipe(map(({ clientId }) => clientId));
+  }
+
   // Sends the ID token from Google's button. The server checks it and returns our own token.
   loginWithGoogle(credential: string): Observable<LoginResponse> {
     return this.http

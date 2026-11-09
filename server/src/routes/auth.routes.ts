@@ -26,6 +26,19 @@ authRouter.post('/login', (req,res)=>{
     res.json({ token: createToken(user.id, user.username), username: user.username });
 })
 
+// The login page needs the Client ID to show Google's button. It isn't secret, but keeping it only in
+// server/.env means there is one copy to change, and none in the frontend code.
+authRouter.get('/login/google/config', (req,res)=>{
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+
+    if (!clientId) {
+        res.status(404).json({ error: 'Google sign-in is not set up' });
+        return;
+    }
+
+    res.json({ clientId });
+})
+
 // The browser sends the ID token Google gave it. Google's library checks it was signed by Google,
 // hasn't expired, and was made for our Client ID, so it can't be faked or taken from another app.
 authRouter.post('/login/google', async (req,res)=>{
