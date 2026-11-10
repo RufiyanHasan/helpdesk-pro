@@ -419,6 +419,20 @@ Problems met during deployment:
 - `Command "ng build" exited with 127`: the first project was created while `vercel.json` was invalid, so Vercel set it up as a plain Angular app with its own build settings. Deleting the project and importing it again, with no build overrides, fixed it.
 - "This app doesn't comply with Google's OAuth 2.0 policy": the live address wasn't in the OAuth client's Authorized JavaScript origins.
 
+## 34. Tickets rebuilt in React
+
+Tickets is now a React micro-frontend in `projects/tickets-react`, so the app is an Angular shell hosting two React remotes, Tickets and Settings. It has everything the Angular version had: the paged, sortable table with server-side search (300 ms after typing stops), filters, selection with delete, a paginator, New ticket with CKEditor and validation, and ticket details.
+
+- Like Settings, it's built with Vite into a fixed `mount.js`, with a hand-written `public/remoteEntry.json` that exposes `./Mount` under the remote name `tickets-react`. In development, `npm run preview` serves it on port 4205, and `public/federation.manifest.json` points there.
+- Structure of `src`: `main.tsx` runs it alone, `mount.tsx` is used by the shell, `App.tsx` picks the page, and there are `api/tickets.ts`, `lib/` (navigation and ticket options), `components/` (Paginator, StatusBadge), `pages/` (TicketList, NewTicket, RichTextEditor, TicketDetails) and `styles/tickets.css`.
+- Routing: Angular's router owns the address bar. The shell route `tickets/**` loads one host component, `src/app/pages/dashboard/tickets-host/`, which calls `mount(element, { basePath, path, navigate })`. React shows the page for `path` ('' list, 'new', or a ticket ID). Its links call `navigate`, which goes through Angular's router, and the host calls `setPath` after every navigation. That keeps the sidebar link, the back and forward buttons and refreshes in sync, without two routers fighting over the URL.
+- New ticket is lazy-loaded (`React.lazy`), so CKEditor (about 1 MB) only downloads when the page opens, and its styles are added and removed with the editor.
+- Ticket descriptions are cleaned with DOMPurify before `dangerouslySetInnerHTML`, as Angular's `[innerHTML]` did automatically.
+- Requests send the token from `localStorage`. A 401 removes the token and goes to `/login`.
+- Both versions are kept. The sidebar's "Tickets" link opens React Tickets at `/dashboard/tickets`. "Tickets (Angular)" opens the original Angular remote (`projects/tickets`, remote name `tickets`) at `/dashboard/tickets-angular`, through `loadRemoteModule('tickets', './Routes')` as before. Its relative links stay inside that address.
+- In development, run both: `ng serve tickets` (port 4201) and `npm run preview` in `projects/tickets-react` (port 4205).
+- The Vercel build (`scripts/build-vercel.mjs`) builds all four frontends: React Tickets into `dist-vercel/tickets`, and Angular Tickets into `dist-vercel/tickets-angular`. The production manifest maps `tickets-react` and `tickets` to those folders. With both, the site is about 7.9 MB. React Tickets alone would be 2.5 MB, because the Angular remote carries its own copies of shared Angular packages.
+
 Problems met so far:
 
 - `Could not resolve "node:path/posix"`: fixed by adding `'@angular/cdk/schematics'` to `skip` in the remote's `federation.config.mjs`. Any remote using Material or CDK needs this.

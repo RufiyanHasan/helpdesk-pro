@@ -17,6 +17,18 @@ export const routes: Routes = [
       {path: '', redirectTo: 'tickets', pathMatch: 'full'},
       {
         path: 'tickets',
+        // One route for every tickets address, so the same React app stays on screen while it changes pages.
+        children: [
+          {
+            path: '**',
+            loadComponent: () =>
+              import('./pages/dashboard/tickets-host/tickets-host').then((m) => m.TicketsHost),
+          },
+        ],
+      },
+      {
+        // The original Angular version of Tickets, kept so the two can be compared.
+        path: 'tickets-angular',
         loadChildren: () => loadRemoteModule('tickets', './Routes').then((m) => m.routes),
       },
       {

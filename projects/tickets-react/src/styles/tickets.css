@@ -1,0 +1,623 @@
+/* Every rule starts with .tickets-app, so these styles never reach the shell.
+   The colours are the shell's CSS variables from src/styles.scss. */
+
+.tickets-app {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  color: var(--text);
+}
+
+.tickets-app .message {
+  margin: 20px 0 0;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.tickets-app .back-link {
+  color: var(--link);
+  font-size: 14px;
+}
+
+/* ---------- Status badge ---------- */
+
+.tickets-app .badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tickets-app .badge--open {
+  background: var(--status-open-bg);
+  color: var(--status-open-text);
+}
+
+.tickets-app .badge--in-progress {
+  background: var(--status-in-progress-bg);
+  color: var(--status-in-progress-text);
+}
+
+.tickets-app .badge--overdue {
+  background: var(--status-overdue-bg);
+  color: var(--status-overdue-text);
+}
+
+.tickets-app .badge--resolved {
+  background: var(--status-resolved-bg);
+  color: var(--status-resolved-text);
+}
+
+/* ---------- Ticket list ---------- */
+
+.tickets-app .ticket-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tickets-app .header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.tickets-app .header__title {
+  margin: 0 0 4px;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.tickets-app .header__subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.tickets-app .header__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tickets-app .header__error {
+  margin: 0;
+  color: var(--error);
+  font-size: 14px;
+}
+
+.tickets-app .delete-tickets {
+  height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--error);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--error);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tickets-app .delete-tickets:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.tickets-app .new-ticket {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--white);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tickets-app .toolbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tickets-app .search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.tickets-app .search__icon {
+  position: absolute;
+  top: 14px;
+  left: 15px;
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.tickets-app .search__input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  padding: 0 14px 0 42px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+}
+
+.tickets-app .filter,
+.tickets-app .advanced-search {
+  flex: none;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.tickets-app .filter {
+  field-sizing: content;
+  padding-right: 30px;
+  border: 1px solid var(--border);
+  background: var(--white)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0h10L5 6z' fill='%234b5563'/%3E%3C/svg%3E")
+    no-repeat right 12px center;
+  color: var(--text);
+  appearance: none;
+}
+
+.tickets-app .advanced-search {
+  border: 0;
+  background: var(--primary-light);
+  color: var(--link);
+  font-weight: 600;
+}
+
+.tickets-app .table-card {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  background: var(--white);
+}
+
+.tickets-app .table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.tickets-app .table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tickets-app .table th,
+.tickets-app .table td {
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-light);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tickets-app .table th:first-child,
+.tickets-app .table td:first-child {
+  padding-left: 24px;
+}
+
+.tickets-app .table th:last-child,
+.tickets-app .table td:last-child {
+  padding-right: 24px;
+}
+
+/* The header row stays visible while the rows scroll under it. */
+.tickets-app .table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 40px;
+  background: var(--white);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tickets-app .table td {
+  height: 46px;
+}
+
+.tickets-app .table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tickets-app .sort-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.tickets-app .sort-header__arrow {
+  font-size: 13px;
+  opacity: 1;
+}
+
+/* Hidden until hovered when the column isn't sorted, like Angular Material. */
+.tickets-app .sort-header__arrow--none {
+  opacity: 0;
+}
+
+.tickets-app .sort-header:hover .sort-header__arrow--none,
+.tickets-app .sort-header:focus-visible .sort-header__arrow--none {
+  opacity: 0.4;
+}
+
+.tickets-app .table__id {
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.tickets-app .table__subject {
+  font-weight: 500;
+}
+
+.tickets-app .table__subject a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tickets-app .table__subject a:hover {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.tickets-app .table .table__select {
+  width: 18px;
+  padding-right: 0;
+}
+
+.tickets-app .table__select input {
+  display: block;
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.tickets-app .table .table__message {
+  padding: 14px 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.tickets-app .paginator {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 56px;
+  padding: 0 8px;
+  border-top: 1px solid var(--border-light);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.tickets-app .paginator__range {
+  margin: 0 24px 0 32px;
+}
+
+.tickets-app .paginator__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  fill: var(--text-muted);
+  cursor: pointer;
+}
+
+.tickets-app .paginator__button:hover:not(:disabled) {
+  background: var(--background);
+}
+
+.tickets-app .paginator__button:disabled {
+  fill: var(--border);
+  cursor: default;
+}
+
+.tickets-app .footer {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  margin-top: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ---------- Shared by New ticket and Ticket details ---------- */
+
+.tickets-app .title {
+  margin: 6px 0 20px;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.tickets-app .layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.tickets-app .card {
+  box-sizing: border-box;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  background: var(--white);
+}
+
+/* ---------- New ticket ---------- */
+
+.tickets-app .form {
+  flex: 2;
+  min-width: 0;
+  padding: 30px;
+}
+
+.tickets-app .form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.tickets-app .form__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+}
+
+.tickets-app .form__error {
+  flex: 1;
+  margin: 0;
+}
+
+.tickets-app .field {
+  margin-bottom: 18px;
+}
+
+.tickets-app .field__label {
+  display: block;
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.tickets-app .field__input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.tickets-app .field__error {
+  margin: 6px 0 0;
+  color: var(--error);
+  font-size: 14px;
+}
+
+.tickets-app .priority {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 20px;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+
+.tickets-app .priority legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.tickets-app .priority__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.tickets-app .priority__option input {
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.tickets-app .button {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tickets-app .button--primary {
+  border: 0;
+  background: var(--primary);
+  color: var(--white);
+  font-weight: 600;
+}
+
+.tickets-app .button--primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.tickets-app .button--secondary {
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+}
+
+.tickets-app .articles {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+  padding: 24px;
+}
+
+.tickets-app .articles__title {
+  margin: 0 0 2px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.tickets-app .articles__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* CKEditor's colours and corners, matched to the app. */
+.tickets-app .rich-text-editor {
+  --ck-font-face: var(--font-family);
+  --ck-font-size-base: 15px;
+  --ck-content-font-family: var(--font-family);
+  --ck-content-font-size: 15px;
+  --ck-color-toolbar-background: var(--background);
+  --ck-color-toolbar-border: var(--border);
+  --ck-color-base-border: var(--border);
+  --ck-focus-ring: 1px solid var(--primary);
+  --ck-color-focus-border: var(--primary);
+  --ck-color-button-on-color: var(--primary);
+}
+
+.tickets-app .rich-text-editor .ck.ck-editor__top .ck-sticky-panel .ck-toolbar {
+  border-radius: 10px 10px 0 0;
+}
+
+.tickets-app .rich-text-editor .ck.ck-editor__main > .ck-editor__editable {
+  min-height: 140px;
+  border-radius: 0 0 10px 10px;
+}
+
+/* ---------- Ticket details ---------- */
+
+.tickets-app .ticket-details .title {
+  margin: 6px 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.tickets-app .ticket-id {
+  margin: 0 0 20px;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.tickets-app .ticket-details .card {
+  padding: 24px;
+}
+
+.tickets-app .card__title {
+  margin: 0 0 14px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.tickets-app .description {
+  flex: 2;
+  min-width: 0;
+}
+
+.tickets-app .description__body {
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.tickets-app .description__empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.tickets-app .info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tickets-app .info__list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px 16px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.tickets-app .info__list dt {
+  color: var(--text-muted);
+}
+
+.tickets-app .info__list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
