@@ -1,4 +1,5 @@
 {
+  "tickets-react": "http://localhost:4205/remoteEntry.json",
   "tickets": "http://localhost:4201/remoteEntry.json",
   "settings": "http://localhost:4203/remoteEntry.json"
 }

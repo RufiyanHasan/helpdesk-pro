@@ -1,0 +1,6 @@
+{
+  "$version": "v4",
+  "name": "tickets-react",
+  "shared": [],
+  "exposes": [{ "key": "./Mount", "outFileName": "mount.js" }]
+}
